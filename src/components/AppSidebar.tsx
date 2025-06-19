@@ -1,5 +1,4 @@
-
-import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles, Bot } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -47,6 +46,11 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
         title: "Progress",
         url: "/progress",
         icon: BarChart3,
+      },
+      {
+        title: "AI Coach",
+        url: "/ai-coach",
+        icon: Bot,
       },
     ];
 

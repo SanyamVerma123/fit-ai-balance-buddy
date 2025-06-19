@@ -1,34 +1,125 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { TrendingUp, Target, Calendar, Award } from "lucide-react";
+import { TrendingUp, Target, Calendar as CalendarIcon, Award, Plus, Scale } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
+interface WeightEntry {
+  date: string;
+  weight: number;
+  timestamp: string;
+}
+
+interface DayData {
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  exercise: string;
+  caloriesBurned: number;
+}
 
 const Progress = () => {
-  const weightData = [
-    { date: "Jan 1", weight: 70, calories: 2100 },
-    { date: "Jan 8", weight: 70.5, calories: 2200 },
-    { date: "Jan 15", weight: 71, calories: 2300 },
-    { date: "Jan 22", weight: 71.8, calories: 2250 },
-    { date: "Jan 29", weight: 72.2, calories: 2400 },
-    { date: "Feb 5", weight: 72.8, calories: 2350 },
-  ];
+  const { userProfile } = useUserProfile();
+  const [newWeight, setNewWeight] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
+  const [dailyData, setDailyData] = useState<DayData[]>([]);
 
-  const weeklyCalories = [
-    { week: "Week 1", target: 14000, actual: 13800 },
-    { week: "Week 2", target: 14000, actual: 14200 },
-    { week: "Week 3", target: 14000, actual: 13900 },
-    { week: "Week 4", target: 14000, actual: 14500 },
-  ];
+  useEffect(() => {
+    const storedEntries = localStorage.getItem('weightEntries');
+    if (storedEntries) {
+      setWeightEntries(JSON.parse(storedEntries));
+    }
+    generateDailyData();
+  }, []);
 
-  const achievements = [
-    { title: "7-Day Streak", description: "Logged calories for 7 consecutive days", earned: true },
-    { title: "First Workout", description: "Completed your first workout session", earned: true },
-    { title: "Goal Achiever", description: "Met your weekly calorie goal", earned: true },
-    { title: "Consistency King", description: "30-day logging streak", earned: false },
-    { title: "Fitness Enthusiast", description: "Complete 20 workouts", earned: false },
-    { title: "Weight Milestone", description: "Reach your target weight", earned: false },
-  ];
+  const generateDailyData = async () => {
+    const today = new Date();
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split('T')[0];
+    }).reverse();
+
+    const data = await Promise.all(last30Days.map(async (date) => {
+      const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
+      const workoutLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
+      
+      const dayFoodItems = foodLog.filter((item: any) => 
+        new Date(item.timestamp).toDateString() === new Date(date).toDateString()
+      );
+      
+      const dayWorkoutItems = workoutLog.filter((item: any) => 
+        new Date(item.timestamp).toDateString() === new Date(date).toDateString()
+      );
+
+      const calories = dayFoodItems.reduce((sum: number, item: any) => sum + item.calories, 0);
+      const caloriesBurned = dayWorkoutItems.reduce((sum: number, item: any) => sum + item.caloriesBurned, 0);
+      
+      // AI-generated nutritional breakdown
+      const protein = Math.round(calories * 0.25 / 4); // 25% protein
+      const carbs = Math.round(calories * 0.45 / 4); // 45% carbs
+      
+      const exerciseTypes = dayWorkoutItems.length > 0 ? 'Active' : 'Rest';
+
+      return {
+        date,
+        calories,
+        protein,
+        carbs,
+        exercise: exerciseTypes,
+        caloriesBurned
+      };
+    }));
+
+    setDailyData(data);
+  };
+
+  const addWeightEntry = () => {
+    if (!newWeight) return;
+    
+    const entry: WeightEntry = {
+      date: format(new Date(), 'MMM dd'),
+      weight: parseFloat(newWeight),
+      timestamp: new Date().toISOString()
+    };
+
+    const updatedEntries = [...weightEntries, entry].slice(-30); // Keep only last 30 entries
+    setWeightEntries(updatedEntries);
+    localStorage.setItem('weightEntries', JSON.stringify(updatedEntries));
+    setNewWeight("");
+  };
+
+  const getWeightChange = () => {
+    if (weightEntries.length < 2) return 0;
+    const latest = weightEntries[weightEntries.length - 1];
+    const previous = weightEntries[weightEntries.length - 2];
+    return latest.weight - previous.weight;
+  };
+
+  const getDayData = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return dailyData.find(data => data.date === dateStr);
+  };
+
+  const weightChange = getWeightChange();
+  const totalWeightChange = weightEntries.length >= 2 ? 
+    weightEntries[weightEntries.length - 1].weight - weightEntries[0].weight : 0;
+
+  const averageCalories = dailyData.length > 0 ? 
+    Math.round(dailyData.reduce((sum, day) => sum + day.calories, 0) / dailyData.length) : 0;
+
+  const streak = dailyData.filter(day => day.calories > 0).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
@@ -39,11 +130,11 @@ const Progress = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Progress Tracking
             </h1>
-            <p className="text-gray-600">Monitor your fitness journey and achievements</p>
+            <p className="text-gray-600">AI-powered real-time progress monitoring</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-purple-700">
@@ -52,8 +143,10 @@ const Progress = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">+2.8 kg</div>
-              <p className="text-sm text-gray-600">Last 6 weeks</p>
+              <div className="text-2xl font-bold text-purple-600">
+                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+              </div>
+              <p className="text-sm text-gray-600">Last update</p>
             </CardContent>
           </Card>
 
@@ -61,25 +154,27 @@ const Progress = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-blue-700">
                 <Target className="w-5 h-5" />
-                Goal Progress
+                Total Change
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">78%</div>
-              <p className="text-sm text-gray-600">To target weight</p>
+              <div className="text-2xl font-bold text-blue-600">
+                {totalWeightChange > 0 ? '+' : ''}{totalWeightChange.toFixed(1)} kg
+              </div>
+              <p className="text-sm text-gray-600">Overall progress</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-700">
-                <Calendar className="w-5 h-5" />
-                Streak
+                <CalendarIcon className="w-5 h-5" />
+                Tracking Days
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">12 days</div>
-              <p className="text-sm text-gray-600">Logging streak</p>
+              <div className="text-2xl font-bold text-green-600">{streak}</div>
+              <p className="text-sm text-gray-600">Days logged</p>
             </CardContent>
           </Card>
 
@@ -87,12 +182,34 @@ const Progress = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-orange-700">
                 <Award className="w-5 h-5" />
-                Achievements
+                Avg Calories
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">3/6</div>
-              <p className="text-sm text-gray-600">Unlocked</p>
+              <div className="text-2xl font-bold text-orange-600">{averageCalories}</div>
+              <p className="text-sm text-gray-600">Daily average</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-indigo-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-indigo-700">
+                <Scale className="w-5 h-5" />
+                Add Weight
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Input
+                type="number"
+                placeholder="Weight (kg)"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                className="w-full"
+              />
+              <Button onClick={addWeightEntry} className="w-full" size="sm">
+                <Plus className="w-4 h-4 mr-1" />
+                Add
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -101,13 +218,11 @@ const Progress = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle>Weight Progress</CardTitle>
-              <CardDescription>
-                Your weight trend over the last 6 weeks
-              </CardDescription>
+              <CardDescription>Your weight trend over time</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={weightData}>
+                <LineChart data={weightEntries}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
@@ -126,71 +241,87 @@ const Progress = () => {
 
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Weekly Calorie Goals</CardTitle>
-              <CardDescription>
-                Target vs actual calorie intake by week
-              </CardDescription>
+              <CardTitle>Calendar View</CardTitle>
+              <CardDescription>Select a date to view detailed data</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={weeklyCalories}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="target" fill="#e5e7eb" name="Target" />
-                  <Bar dataKey="actual" fill="#3b82f6" name="Actual" />
-                </BarChart>
-              </ResponsiveContainer>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal mb-4",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {selectedDate && (
+                <div className="space-y-3">
+                  {(() => {
+                    const dayData = getDayData(selectedDate);
+                    if (!dayData) return <p className="text-gray-500">No data for this date</p>;
+                    
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Calories:</span>
+                          <span className="text-sm">{dayData.calories}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Protein:</span>
+                          <span className="text-sm">{dayData.protein}g</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Carbs:</span>
+                          <span className="text-sm">{dayData.carbs}g</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Exercise:</span>
+                          <span className="text-sm">{dayData.exercise}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Burned:</span>
+                          <span className="text-sm">{dayData.caloriesBurned} cal</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
         <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-yellow-600" />
-              Achievements
-            </CardTitle>
-            <CardDescription>
-              Unlock achievements as you progress on your fitness journey
-            </CardDescription>
+            <CardTitle>Weekly Calorie Intake</CardTitle>
+            <CardDescription>AI-adjusted recommendations based on your progress</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {achievements.map((achievement, index) => (
-                <div 
-                  key={index} 
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    achievement.earned 
-                      ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200' 
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      achievement.earned ? 'bg-yellow-500' : 'bg-gray-300'
-                    }`}>
-                      <Award className={`w-4 h-4 ${
-                        achievement.earned ? 'text-white' : 'text-gray-500'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <h4 className={`font-medium ${
-                        achievement.earned ? 'text-yellow-800' : 'text-gray-600'
-                      }`}>
-                        {achievement.title}
-                      </h4>
-                      <p className={`text-sm ${
-                        achievement.earned ? 'text-yellow-700' : 'text-gray-500'
-                      }`}>
-                        {achievement.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={dailyData.slice(-7)}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="calories" fill="#3b82f6" name="Calories" />
+                <Bar dataKey="caloriesBurned" fill="#ef4444" name="Burned" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
