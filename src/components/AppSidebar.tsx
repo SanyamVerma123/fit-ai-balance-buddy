@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -14,41 +14,55 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Weight Gain",
-    url: "/weight-gain",
-    icon: TrendingUp,
-  },
-  {
-    title: "Weight Loss",
-    url: "/weight-loss",
-    icon: TrendingDown,
-  },
-  {
-    title: "Maintain Weight",
-    url: "/weight-maintain",
-    icon: Activity,
-  },
-  {
-    title: "Workouts",
-    url: "/workouts",
-    icon: Dumbbell,
-  },
-  {
-    title: "Progress",
-    url: "/progress",
-    icon: BarChart3,
-  },
-];
+interface AppSidebarProps {
+  userGoal?: 'gain' | 'loss' | 'maintain';
+}
 
-export function AppSidebar() {
+export function AppSidebar({ userGoal }: AppSidebarProps) {
   const location = useLocation();
+
+  const getMenuItems = () => {
+    const baseItems = [
+      {
+        title: "Dashboard",
+        url: "/",
+        icon: Home,
+      },
+      {
+        title: "Workouts",
+        url: "/workouts",
+        icon: Dumbbell,
+      },
+      {
+        title: "Progress",
+        url: "/progress",
+        icon: BarChart3,
+      },
+    ];
+
+    // Add goal-specific item based on user preference
+    if (userGoal === 'gain') {
+      baseItems.splice(1, 0, {
+        title: "Weight Gain",
+        url: "/weight-gain",
+        icon: TrendingUp,
+      });
+    } else if (userGoal === 'loss') {
+      baseItems.splice(1, 0, {
+        title: "Weight Loss",
+        url: "/weight-loss",
+        icon: TrendingDown,
+      });
+    } else if (userGoal === 'maintain') {
+      baseItems.splice(1, 0, {
+        title: "Maintain Weight",
+        url: "/weight-maintain",
+        icon: Activity,
+      });
+    }
+
+    return baseItems;
+  };
 
   return (
     <Sidebar>
@@ -67,7 +81,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {getMenuItems().map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
@@ -86,5 +100,14 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
+  );
+}
+
+// Enhanced Sidebar Trigger with premium look
+export function PremiumSidebarTrigger() {
+  return (
+    <SidebarTrigger className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-0">
+      <Menu className="h-6 w-6" />
+    </SidebarTrigger>
   );
 }
