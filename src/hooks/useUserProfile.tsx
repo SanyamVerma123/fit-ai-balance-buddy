@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react';
 
 interface UserProfile {
   name: string;
-  age: string;
-  gender: string;
-  height: string;
-  weight: string;
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  height: number;
+  weight: number;
   goal: 'gain' | 'loss' | 'maintain';
-  activityLevel: string;
-  targetWeight: string;
+  targetWeight: number;
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'very' | 'extra';
+  dietPreference: 'vegetarian' | 'non-vegetarian' | 'mixed';
+  workoutLocation: 'gym' | 'home' | 'outdoor';
 }
 
 export const useUserProfile = () => {
@@ -18,9 +20,9 @@ export const useUserProfile = () => {
 
   useEffect(() => {
     const stored = localStorage.getItem('userProfile');
-    const onboarded = localStorage.getItem('isOnboarded');
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
     
-    if (stored && onboarded === 'true') {
+    if (stored && onboardingComplete) {
       setUserProfile(JSON.parse(stored));
       setIsOnboarded(true);
     }
@@ -30,22 +32,15 @@ export const useUserProfile = () => {
     setUserProfile(profile);
     setIsOnboarded(true);
     localStorage.setItem('userProfile', JSON.stringify(profile));
-    localStorage.setItem('isOnboarded', 'true');
+    localStorage.setItem('onboardingComplete', 'true');
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     if (userProfile) {
-      const updated = { ...userProfile, ...updates };
-      setUserProfile(updated);
-      localStorage.setItem('userProfile', JSON.stringify(updated));
+      const updatedProfile = { ...userProfile, ...updates };
+      setUserProfile(updatedProfile);
+      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
     }
-  };
-
-  const resetOnboarding = () => {
-    setUserProfile(null);
-    setIsOnboarded(false);
-    localStorage.removeItem('userProfile');
-    localStorage.removeItem('isOnboarded');
   };
 
   return {
@@ -53,6 +48,5 @@ export const useUserProfile = () => {
     isOnboarded,
     completeOnboarding,
     updateProfile,
-    resetOnboarding
   };
 };

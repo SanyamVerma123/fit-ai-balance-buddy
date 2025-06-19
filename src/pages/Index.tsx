@@ -1,24 +1,23 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { EnhancedCalorieCounter } from "@/components/EnhancedCalorieCounter";
-import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
-import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
-import { QuickStats } from "@/components/QuickStats";
+import { Badge } from "@/components/ui/badge";
+import { Target, TrendingUp, Utensils, Activity, Award, Calendar } from "lucide-react";
 import { PremiumSidebarTrigger } from "@/components/AppSidebar";
+import { MealTracker } from "@/components/MealTracker";
+import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
+import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { Target, Activity, User, Utensils } from "lucide-react";
 
 interface FoodItem {
   name: string;
   quantity: number;
   unit: string;
   calories: number;
+  mealType: string;
   date: string;
+  time: string;
 }
 
 interface WorkoutItem {
@@ -26,89 +25,103 @@ interface WorkoutItem {
   duration: number;
   calories: number;
   date: string;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+  location: string;
 }
 
-interface DailyIntake {
+interface DailyData {
   [date: string]: {
-    foods: FoodItem[];
     totalCalories: number;
-  };
-}
-
-interface DailyWorkouts {
-  [date: string]: {
+    foods: FoodItem[];
     workouts: WorkoutItem[];
-    totalCaloriesBurned: number;
+    caloriesBurned: number;
   };
 }
 
 const Index = () => {
-  const { userProfile, updateProfile } = useUserProfile();
-  const [dailyIntake, setDailyIntake] = useState<DailyIntake>({});
-  const [dailyWorkouts, setDailyWorkouts] = useState<DailyWorkouts>({});
-  const [calorieGoal, setCalorieGoal] = useState(2000);
-  
+  const [dailyData, setDailyData] = useState<DailyData>({});
+  const [calorieGoal, setCalorieGoal] = useState(2200);
+  const { userProfile } = useUserProfile();
+
   const today = new Date().toISOString().split('T')[0];
-  const todayIntake = dailyIntake[today] || { foods: [], totalCalories: 0 };
-  const todayWorkouts = dailyWorkouts[today] || { workouts: [], totalCaloriesBurned: 0 };
-  
-  const netCalories = todayIntake.totalCalories - todayWorkouts.totalCaloriesBurned;
-  const calorieProgress = Math.max(0, (netCalories / calorieGoal) * 100);
+  const todayData = dailyData[today] || { 
+    totalCalories: 0, 
+    foods: [], 
+    workouts: [], 
+    caloriesBurned: 0 
+  };
 
   useEffect(() => {
-    const storedIntake = localStorage.getItem('dailyIntake');
-    const storedWorkouts = localStorage.getItem('dailyWorkouts');
-    const storedGoal = localStorage.getItem('calorieGoal');
-    
-    if (storedIntake) {
-      setDailyIntake(JSON.parse(storedIntake));
-    }
-    if (storedWorkouts) {
-      setDailyWorkouts(JSON.parse(storedWorkouts));
-    }
-    if (storedGoal) {
-      setCalorieGoal(parseInt(storedGoal));
+    const stored = localStorage.getItem('dailyData');
+    if (stored) {
+      setDailyData(JSON.parse(stored));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('dailyIntake', JSON.stringify(dailyIntake));
-  }, [dailyIntake]);
+    localStorage.setItem('dailyData', JSON.stringify(dailyData));
+  }, [dailyData]);
 
-  useEffect(() => {
-    localStorage.setItem('dailyWorkouts', JSON.stringify(dailyWorkouts));
-  }, [dailyWorkouts]);
-
-  useEffect(() => {
-    localStorage.setItem('calorieGoal', calorieGoal.toString());
-  }, [calorieGoal]);
-
-  const handleAddFood = (calories: number, food: FoodItem) => {
-    setDailyIntake(prev => {
+  const handleCaloriesAdd = (calories: number, food: FoodItem) => {
+    setDailyData(prev => {
       const updated = { ...prev };
       if (!updated[today]) {
-        updated[today] = { foods: [], totalCalories: 0 };
+        updated[today] = { totalCalories: 0, foods: [], workouts: [], caloriesBurned: 0 };
       }
-      updated[today].foods.push(food);
       updated[today].totalCalories += calories;
+      updated[today].foods.push(food);
       return updated;
     });
   };
 
-  const handleAddWorkout = (workout: WorkoutItem) => {
-    setDailyWorkouts(prev => {
+  const handleWorkoutAdd = (workout: WorkoutItem) => {
+    setDailyData(prev => {
       const updated = { ...prev };
       if (!updated[today]) {
-        updated[today] = { workouts: [], totalCaloriesBurned: 0 };
+        updated[today] = { totalCalories: 0, foods: [], workouts: [], caloriesBurned: 0 };
       }
       updated[today].workouts.push(workout);
-      updated[today].totalCaloriesBurned += workout.calories;
+      updated[today].caloriesBurned += workout.calories;
       return updated;
     });
   };
 
-  const handleGoalCalculated = (goal: number) => {
-    setCalorieGoal(goal);
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const getStreakDays = () => {
+    const dates = Object.keys(dailyData).sort().reverse();
+    let streak = 0;
+    for (const date of dates) {
+      if (dailyData[date].totalCalories > 0 || dailyData[date].workouts.length > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const calorieProgress = Math.min((todayData.totalCalories / calorieGoal) * 100, 100);
+  const netCalories = todayData.totalCalories - todayData.caloriesBurned;
+
+  const getGoalMessage = () => {
+    switch (userProfile?.goal) {
+      case 'gain':
+        return 'Building muscle and gaining weight healthily';
+      case 'loss':
+        return 'Burning calories and losing weight safely';
+      case 'maintain':
+        return 'Maintaining current weight and staying fit';
+      default:
+        return 'Track your nutrition and fitness journey';
+    }
   };
 
   return (
@@ -117,85 +130,167 @@ const Index = () => {
         <div className="flex items-center gap-4 mb-8">
           <PremiumSidebarTrigger />
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Welcome back, {userProfile?.name || 'User'}! 👋
-                </h1>
-                <p className="text-gray-600">AI-powered fitness tracking for your {userProfile?.goal === 'gain' ? 'weight gain' : userProfile?.goal === 'loss' ? 'weight loss' : 'weight maintenance'} journey</p>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">Today's Goal</div>
-                <div className="text-2xl font-bold text-purple-600">{calorieGoal} kcal</div>
-              </div>
-            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {getGreeting()}{userProfile?.name ? `, ${userProfile.name}!` : '!'}
+            </h1>
+            <p className="text-gray-600">{getGoalMessage()}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-gray-500" />
+            <span className="text-sm text-gray-600">{new Date().toLocaleDateString()}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <QuickStats />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-600" />
-                Daily Progress
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-blue-700 text-lg">
+                <Target className="w-5 h-5" />
+                Calories Today
               </CardTitle>
-              <CardDescription>
-                Calories: {todayIntake.totalCalories} consumed - {todayWorkouts.totalCaloriesBurned} burned = {netCalories} net
-              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Progress value={calorieProgress} className="mb-4" />
-              <div className="flex justify-between text-sm text-gray-600 mb-4">
-                <span>Net Calories: {netCalories} kcal</span>
-                <span>Remaining: {Math.max(0, calorieGoal - netCalories)} kcal</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold text-blue-600">
+                    {todayData.totalCalories}
+                  </span>
+                  <span className="text-sm text-gray-500">/ {calorieGoal}</span>
+                </div>
+                <Progress value={calorieProgress} className="h-2" />
+                <p className="text-xs text-gray-600">
+                  {calorieGoal - todayData.totalCalories > 0 
+                    ? `${calorieGoal - todayData.totalCalories} kcal remaining`
+                    : 'Goal reached!'
+                  }
+                </p>
               </div>
-              
-              {todayIntake.foods.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-2">
-                    <Utensils className="w-4 h-4" />
-                    Today's Foods:
-                  </h4>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {todayIntake.foods.map((food, index) => (
-                      <div key={index} className="flex justify-between text-sm bg-white p-2 rounded border">
-                        <span>{food.name} ({food.quantity} {food.unit})</span>
-                        <span className="text-blue-600 font-medium">{food.calories} kcal</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {todayWorkouts.workouts.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Today's Workouts:
-                  </h4>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {todayWorkouts.workouts.map((workout, index) => (
-                      <div key={index} className="flex justify-between text-sm bg-white p-2 rounded border">
-                        <span>{workout.name} ({workout.duration} min)</span>
-                        <span className="text-orange-600 font-medium">-{workout.calories} kcal</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-green-700 text-lg">
+                <Utensils className="w-5 h-5" />
+                Meals Today
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600 mb-2">
+                {todayData.foods.length}
+              </div>
+              <div className="space-y-1">
+                {['breakfast', 'lunch', 'dinner', 'snacks'].map(mealType => {
+                  const mealCount = todayData.foods.filter(f => f.mealType === mealType).length;
+                  return mealCount > 0 ? (
+                    <Badge key={mealType} variant="secondary" className="mr-1 text-xs">
+                      {mealType}: {mealCount}
+                    </Badge>
+                  ) : null;
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-orange-700 text-lg">
+                <Activity className="w-5 h-5" />
+                Workouts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600 mb-2">
+                {todayData.workouts.length}
+              </div>
+              <p className="text-sm text-gray-600">
+                {todayData.caloriesBurned} kcal burned
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-purple-700 text-lg">
+                <Award className="w-5 h-5" />
+                Streak
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600 mb-2">
+                {getStreakDays()}
+              </div>
+              <p className="text-sm text-gray-600">
+                {getStreakDays() === 1 ? 'day' : 'days'} active
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Net Calories Info */}
+        <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Net Calories</h3>
+                <p className="text-sm text-gray-600">Consumed - Burned = Net intake</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-blue-600">
+                  {netCalories} kcal
+                </div>
+                <p className="text-sm text-gray-500">
+                  {todayData.totalCalories} - {todayData.caloriesBurned}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Main Tracking Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <MealTracker onCaloriesAdd={handleCaloriesAdd} />
+          <AiWorkoutTracker onWorkoutAdd={handleWorkoutAdd} />
+        </div>
+
+        {/* AI Calorie Goal Calculator */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <EnhancedCalorieCounter onCaloriesAdd={handleAddFood} />
-          <AiWorkoutTracker onWorkoutAdd={handleAddWorkout} />
+          <AiCalorieGoalCalculator onGoalCalculated={setCalorieGoal} />
+          
+          {/* Recent Activity */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Your latest meals and workouts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {[...todayData.foods, ...todayData.workouts]
+                  .sort((a, b) => new Date(a.time || a.date).getTime() - new Date(b.time || b.date).getTime())
+                  .slice(-5)
+                  .map((item, index) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {'mealType' in item ? `${item.mealType} • ${item.quantity} ${item.unit}` : `Workout • ${item.duration} min`}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{item.calories} kcal</Badge>
+                    </div>
+                  ))}
+                
+                {todayData.foods.length === 0 && todayData.workouts.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No activity yet today</p>
+                    <p className="text-sm">Start tracking your meals and workouts!</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
