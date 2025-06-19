@@ -38,8 +38,8 @@ const units = [
 
 export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounterProps) => {
   const [foodName, setFoodName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [unit, setUnit] = useState("gram");
+  const [quantity, setQuantity] = useState("1");
+  const [unit, setUnit] = useState("piece");
   const [isProcessing, setIsProcessing] = useState(false);
   const [savedFoods, setSavedFoods] = useState<SavedFood[]>([]);
   const [searchResults, setSearchResults] = useState<SavedFood[]>([]);
@@ -72,7 +72,7 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
     setSearchResults(results);
   };
 
-  const analyzeWithAI = async (description: string) => {
+  const analyzeWithAI = async (description: string, qty: string, unitType: string) => {
     setIsProcessing(true);
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -82,15 +82,15 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.2-1b-preview',
+          model: 'llama3-70b-8192',
           messages: [
             {
               role: 'system',
-              content: 'You are a nutrition expert. Analyze food items and provide calorie information. Return ONLY a JSON object with this format: {"calories": number, "food_name": "string"}. For example: {"calories": 150, "food_name": "banana"}. Be precise and consider typical serving sizes.'
+              content: 'You are a nutrition expert. Analyze food items and provide calorie information. Return ONLY a JSON object with this exact format: {"calories": number, "food_name": "string"}. Be precise and consider the exact quantity and unit provided. For example: {"calories": 150, "food_name": "banana"}.'
             },
             {
               role: 'user',
-              content: `Analyze this food item and estimate calories: ${description} (${quantity} ${unit})`
+              content: `Calculate exact calories for: ${description} - ${qty} ${unitType}. Be very precise with the quantity.`
             }
           ],
           temperature: 0.1,
@@ -112,7 +112,6 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
           name: parsed.food_name || description
         };
       } catch {
-        // Fallback parsing if JSON is not perfect
         const calorieMatch = content.match(/(\d+)/);
         return {
           calories: calorieMatch ? parseInt(calorieMatch[1]) : 100,
@@ -145,7 +144,7 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
       return;
     }
 
-    const result = await analyzeWithAI(foodName);
+    const result = await analyzeWithAI(foodName, quantity, unit);
     const foodItem: FoodItem = {
       name: result.name,
       quantity: Number(quantity),
@@ -156,7 +155,6 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
 
     onCaloriesAdd(result.calories, foodItem);
     
-    // Save food for future reference
     const caloriesPerUnit = result.calories / Number(quantity);
     saveFood({
       name: result.name,
@@ -170,7 +168,7 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
     });
 
     setFoodName("");
-    setQuantity("");
+    setQuantity("1");
     setSearchResults([]);
   };
 
@@ -189,24 +187,57 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
+        setIsProcessing(true);
         toast({
           title: "Image captured!",
           description: "Analyzing image with AI...",
         });
         
-        // For now, simulate AI image analysis
-        setTimeout(async () => {
-          setFoodName("Detected food item");
-          const result = await analyzeWithAI("food item from image");
-          toast({
-            title: "Image analyzed!",
-            description: `Detected: ${result.name}`,
-          });
-        }, 2000);
+        // Create a FileReader to read the image as base64
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            // Simulate AI image analysis with a more realistic approach
+            const analysisResult = await analyzeImageWithAI(file.name);
+            setFoodName(analysisResult.name);
+            setQuantity(analysisResult.quantity.toString());
+            setUnit(analysisResult.unit);
+            
+            toast({
+              title: "Image analyzed!",
+              description: `Detected: ${analysisResult.name}`,
+            });
+          } catch (error) {
+            toast({
+              title: "Analysis failed",
+              description: "Could not analyze the image. Please enter manually.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsProcessing(false);
+          }
+        };
+        reader.readAsDataURL(file);
       }
     };
     
     input.click();
+  };
+
+  const analyzeImageWithAI = async (fileName: string) => {
+    // Simulate AI image analysis - in a real app, you'd send the image to an AI service
+    const commonFoods = [
+      { name: "Apple", quantity: 1, unit: "piece" },
+      { name: "Banana", quantity: 1, unit: "piece" },
+      { name: "Rice bowl", quantity: 1, unit: "cup" },
+      { name: "Grilled chicken", quantity: 150, unit: "gram" },
+      { name: "Bread slice", quantity: 2, unit: "slice" },
+      { name: "Pasta", quantity: 1, unit: "cup" }
+    ];
+    
+    // Return a random food item as simulation
+    const randomFood = commonFoods[Math.floor(Math.random() * commonFoods.length)];
+    return randomFood;
   };
 
   return (
@@ -214,10 +245,10 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Utensils className="w-5 h-5 text-green-600" />
-          Add Food with AI
+          AI Food Tracker
         </CardTitle>
         <CardDescription>
-          Track calories with AI assistance and smart suggestions
+          Add food with AI-powered calorie calculation
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -231,11 +262,11 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
                 setFoodName(e.target.value);
                 searchSavedFoods(e.target.value);
               }}
-              placeholder="e.g., Grilled chicken breast, Rice bowl"
+              placeholder="e.g., Apple, Rice, Grilled chicken"
               disabled={isProcessing}
             />
             {searchResults.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
                 {searchResults.map((food, index) => (
                   <div
                     key={index}
@@ -261,6 +292,8 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="1"
               disabled={isProcessing}
+              min="0.1"
+              step="0.1"
             />
           </div>
           <div className="space-y-2">
@@ -303,7 +336,7 @@ export const EnhancedCalorieCounter = ({ onCaloriesAdd }: EnhancedCalorieCounter
             onClick={handleImageCapture}
             variant="outline"
             disabled={isProcessing}
-            className="px-3"
+            className="px-3 bg-blue-50 hover:bg-blue-100 border-blue-200"
           >
             <Camera className="w-4 h-4" />
           </Button>

@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -40,7 +40,6 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
       },
     ];
 
-    // Add goal-specific item based on user preference
     if (userGoal === 'gain') {
       baseItems.splice(1, 0, {
         title: "Weight Gain",
@@ -69,7 +68,7 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <Activity className="w-4 h-4 text-white" />
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             FitTracker AI
@@ -103,11 +102,14 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
   );
 }
 
-// Enhanced Sidebar Trigger with premium look
 export function PremiumSidebarTrigger() {
   return (
-    <SidebarTrigger className="h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-0">
-      <Menu className="h-6 w-6" />
-    </SidebarTrigger>
+    <div className="relative group">
+      <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+      <SidebarTrigger className="relative h-14 w-14 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 transform hover:scale-105">
+        <Menu className="h-7 w-7" />
+        <span className="sr-only">Toggle Sidebar</span>
+      </SidebarTrigger>
+    </div>
   );
 }
