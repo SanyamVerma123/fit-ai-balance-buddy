@@ -1,11 +1,9 @@
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Utensils, Dumbbell, Target } from "lucide-react";
 import { MealTracker } from "@/components/MealTracker";
 import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
-import { QuickStats } from "@/components/QuickStats";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useState, useEffect } from "react";
 
@@ -116,8 +114,6 @@ const Index = () => {
             <p className="text-gray-600">Your AI-powered fitness companion for {goalMessage}</p>
           </div>
         </div>
-
-        <QuickStats />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
