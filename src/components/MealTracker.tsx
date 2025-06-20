@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Utensils, Camera, Brain, Clock } from "lucide-react";
+import { Plus, Utensils, Camera, Brain, Clock, Upload, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -29,6 +28,13 @@ interface SavedMeal {
 
 interface MealTrackerProps {
   onCaloriesAdd: (calories: number, food: FoodItem) => void;
+}
+
+interface SuggestedFood {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
 }
 
 const mealTypes = [
@@ -57,6 +63,11 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
   const [dailyMeals, setDailyMeals] = useState<{[key: string]: FoodItem[]}>({});
+  const [aiSuggestions, setAiSuggestions] = useState<SuggestedFood[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imageDescription, setImageDescription] = useState("");
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const { toast } = useToast();
   const { userProfile } = useUserProfile();
 
@@ -158,15 +169,15 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a nutrition expert. Suggest healthy meal items for specific meal types. Return ONLY a JSON array with this exact format: [{"name": "food_name", "quantity": number, "unit": "unit_type", "calories": number}]. Maximum 3-4 items per meal.'
+              content: 'You are a nutrition expert. Suggest healthy meal items. Return ONLY a JSON array with this format: [{"name": "food_name", "quantity": number, "unit": "unit_type", "calories": number}]. Maximum 3-4 items. Keep responses short and practical.'
             },
             {
               role: 'user',
-              content: `Suggest a healthy ${mealType} for someone who wants to ${goalInfo} weight. Diet preference: ${dietInfo}. Include portion sizes and calories.`
+              content: `Suggest a healthy ${mealType} for someone who wants to ${goalInfo} weight. Diet: ${dietInfo}. Include portions and calories.`
             }
           ],
           temperature: 0.3,
-          max_tokens: 300
+          max_tokens: 200
         }),
       });
 
@@ -179,9 +190,10 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
       
       try {
         const suggestions = JSON.parse(content);
+        setAiSuggestions(suggestions);
+        setShowSuggestions(true);
         return suggestions;
       } catch {
-        // Fallback suggestions
         const fallbacks = {
           breakfast: [
             { name: "Oatmeal with banana", quantity: 1, unit: "cup", calories: 150 },
@@ -196,7 +208,10 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
             { name: "Steamed vegetables", quantity: 1, unit: "cup", calories: 50 }
           ]
         };
-        return fallbacks[mealType as keyof typeof fallbacks] || fallbacks.breakfast;
+        const fallbackSuggestions = fallbacks[mealType as keyof typeof fallbacks] || fallbacks.breakfast;
+        setAiSuggestions(fallbackSuggestions);
+        setShowSuggestions(true);
+        return fallbackSuggestions;
       }
     } catch (error) {
       console.error('AI suggestion failed:', error);
@@ -204,6 +219,109 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const analyzeImageWithAI = async (imageFile: File, description: string) => {
+    setIsAnalyzingImage(true);
+    try {
+      // Convert image to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(imageFile);
+      });
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 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',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.2-11b-vision-preview',
+          messages: [
+            {
+              role: 'system',
+              content: 'Analyze food images and provide name and calories. Return ONLY JSON: {"name": "food_name", "calories": number}. Be precise with quantity described.'
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Identify this food and calculate calories. Additional info: ${description}. Consider the quantity mentioned.`
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: base64
+                  }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 100
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze image');
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      try {
+        const parsed = JSON.parse(content);
+        return {
+          name: parsed.name || 'Unknown food',
+          calories: parsed.calories || 100
+        };
+      } catch {
+        return {
+          name: 'Food from image',
+          calories: 150
+        };
+      }
+    } catch (error) {
+      console.error('Image analysis failed:', error);
+      return {
+        name: 'Food from image',
+        calories: 150
+      };
+    } finally {
+      setIsAnalyzingImage(false);
+    }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadedImage(file);
+    }
+  };
+
+  const handleImageAnalysis = async () => {
+    if (!uploadedImage) {
+      toast({
+        title: "No image selected",
+        description: "Please select an image first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await analyzeImageWithAI(uploadedImage, imageDescription);
+    setFoodName(result.name);
+    
+    toast({
+      title: "Image analyzed!",
+      description: `Detected: ${result.name} (${result.calories} kcal)`,
+    });
+
+    setUploadedImage(null);
+    setImageDescription("");
   };
 
   const handleAddFood = async () => {
@@ -227,7 +345,6 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
       time: new Date().toLocaleTimeString()
     };
 
-    // Add to daily meals
     setDailyMeals(prev => ({
       ...prev,
       [today]: [...(prev[today] || []), foodItem]
@@ -244,57 +361,28 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
     setQuantity("1");
   };
 
-  const handleAISuggestion = async () => {
-    const suggestions = await generateAIMealSuggestion(selectedMeal);
-    
-    if (suggestions.length > 0) {
-      let totalCalories = 0;
-      const mealItems: FoodItem[] = [];
+  const handleAddSuggestedFood = (suggestion: SuggestedFood) => {
+    const foodItem: FoodItem = {
+      name: suggestion.name,
+      quantity: suggestion.quantity,
+      unit: suggestion.unit,
+      calories: suggestion.calories,
+      mealType: selectedMeal,
+      date: today,
+      time: new Date().toLocaleTimeString()
+    };
 
-      for (const suggestion of suggestions) {
-        const foodItem: FoodItem = {
-          name: suggestion.name,
-          quantity: suggestion.quantity,
-          unit: suggestion.unit,
-          calories: suggestion.calories,
-          mealType: selectedMeal,
-          date: today,
-          time: new Date().toLocaleTimeString()
-        };
-        
-        mealItems.push(foodItem);
-        totalCalories += suggestion.calories;
-      }
+    setDailyMeals(prev => ({
+      ...prev,
+      [today]: [...(prev[today] || []), foodItem]
+    }));
 
-      // Add all items to daily meals
-      setDailyMeals(prev => ({
-        ...prev,
-        [today]: [...(prev[today] || []), ...mealItems]
-      }));
+    onCaloriesAdd(suggestion.calories, foodItem);
 
-      // Save as a meal suggestion for future use
-      const savedMeal: SavedMeal = {
-        name: `AI ${selectedMeal} suggestion`,
-        items: mealItems,
-        mealType: selectedMeal,
-        totalCalories
-      };
-
-      setSavedMeals(prev => {
-        const existing = prev.filter(meal => 
-          !(meal.name.includes(`AI ${selectedMeal}`) && meal.mealType === selectedMeal)
-        );
-        return [...existing, savedMeal];
-      });
-
-      // Update total calories
-      mealItems.forEach(item => onCaloriesAdd(item.calories, item));
-
-      toast({
-        title: "AI meal added!",
-        description: `Added complete ${selectedMeal} (${totalCalories} kcal)`,
-      });
-    }
+    toast({
+      title: "Food added!",
+      description: `Added ${suggestion.name} to ${selectedMeal} (${suggestion.calories} kcal)`,
+    });
   };
 
   const todayMealsForType = (dailyMeals[today] || []).filter(meal => meal.mealType === selectedMeal);
@@ -348,7 +436,7 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
 
         {/* AI Suggestion Button */}
         <Button 
-          onClick={handleAISuggestion}
+          onClick={() => generateAIMealSuggestion(selectedMeal)}
           disabled={isProcessing}
           className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
         >
@@ -364,6 +452,121 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
             </>
           )}
         </Button>
+
+        {/* AI Suggestions Display */}
+        {showSuggestions && aiSuggestions.length > 0 && (
+          <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-medium text-purple-700">AI {selectedMeal} Suggestions</h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSuggestions(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {aiSuggestions.map((suggestion, index) => (
+                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                  <div>
+                    <div className="font-medium">{suggestion.name}</div>
+                    <div className="text-sm text-gray-600">
+                      {suggestion.quantity} {suggestion.unit} • {suggestion.calories} kcal
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const updatedSuggestions = aiSuggestions.filter((_, i) => i !== index);
+                        setAiSuggestions(updatedSuggestions);
+                        if (updatedSuggestions.length === 0) setShowSuggestions(false);
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        handleAddSuggestedFood(suggestion);
+                        const updatedSuggestions = aiSuggestions.filter((_, i) => i !== index);
+                        setAiSuggestions(updatedSuggestions);
+                        if (updatedSuggestions.length === 0) setShowSuggestions(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Check className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Image Upload Section */}
+        <div className="border-t pt-4 space-y-4">
+          <h4 className="font-medium flex items-center gap-2">
+            <Camera className="w-4 h-4" />
+            Add Food by Image
+          </h4>
+          
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="imageUpload">Upload Food Image</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="imageUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('imageUpload')?.click()}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            {uploadedImage && (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="imageDescription">Describe quantity & details</Label>
+                  <Input
+                    id="imageDescription"
+                    value={imageDescription}
+                    onChange={(e) => setImageDescription(e.target.value)}
+                    placeholder="e.g., 2 slices, 1 cup, medium size"
+                  />
+                </div>
+                
+                <Button
+                  onClick={handleImageAnalysis}
+                  disabled={isAnalyzingImage}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                >
+                  {isAnalyzingImage ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                      Analyzing Image...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4 mr-2" />
+                      Analyze Image
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Manual Food Entry */}
         <div className="space-y-4 border-t pt-4">
