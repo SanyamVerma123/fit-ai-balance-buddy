@@ -7,6 +7,7 @@ import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { QuickStats } from "@/components/QuickStats";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useState, useEffect } from "react";
 
 interface FoodItem {
   id: string;
@@ -28,16 +29,76 @@ interface WorkoutItem {
 
 const Index = () => {
   const { userProfile } = useUserProfile();
+  const [calorieGoal, setCalorieGoal] = useState<number>(2000);
+  const [todayData, setTodayData] = useState({
+    foodItems: [] as FoodItem[],
+    workoutItems: [] as WorkoutItem[]
+  });
 
   const today = new Date().toDateString();
-  const todayFoodItems: FoodItem[] = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]')
-    .filter((item: FoodItem) => new Date(item.timestamp).toDateString() === today);
-  
-  const todayWorkoutItems: WorkoutItem[] = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]')
-    .filter((item: WorkoutItem) => new Date(item.timestamp).toDateString() === today);
 
-  const totalCaloriesConsumed = todayFoodItems.reduce((sum, item) => sum + item.calories, 0);
-  const totalCaloriesBurned = todayWorkoutItems.reduce((sum, item) => sum + item.caloriesBurned, 0);
+  useEffect(() => {
+    // Load today's data from localStorage
+    const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]')
+      .filter((item: FoodItem) => new Date(item.timestamp).toDateString() === today);
+    
+    const workoutLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]')
+      .filter((item: WorkoutItem) => new Date(item.timestamp).toDateString() === today);
+
+    setTodayData({
+      foodItems: foodLog,
+      workoutItems: workoutLog
+    });
+  }, [today]);
+
+  const handleGoalCalculated = (goal: number) => {
+    setCalorieGoal(goal);
+  };
+
+  const handleCaloriesAdd = (calories: number, food: any) => {
+    const foodItem: FoodItem = {
+      id: Date.now().toString(),
+      name: food.name,
+      calories: food.calories,
+      quantity: food.quantity,
+      unit: food.unit,
+      mealType: food.mealType,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update local state
+    setTodayData(prev => ({
+      ...prev,
+      foodItems: [...prev.foodItems, foodItem]
+    }));
+
+    // Save to localStorage
+    const existingLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
+    localStorage.setItem('dailyFoodLog', JSON.stringify([...existingLog, foodItem]));
+  };
+
+  const handleWorkoutAdd = (workout: any) => {
+    const workoutItem: WorkoutItem = {
+      id: Date.now().toString(),
+      name: workout.name,
+      duration: workout.duration,
+      caloriesBurned: workout.calories,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update local state
+    setTodayData(prev => ({
+      ...prev,
+      workoutItems: [...prev.workoutItems, workoutItem]
+    }));
+
+    // Save to localStorage
+    const existingLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
+    localStorage.setItem('dailyWorkoutLog', JSON.stringify([...existingLog, workoutItem]));
+  };
+
+  const totalCaloriesConsumed = todayData.foodItems.reduce((sum, item) => sum + item.calories, 0);
+  const totalCaloriesBurned = todayData.workoutItems.reduce((sum, item) => sum + item.caloriesBurned, 0);
   const netCalories = totalCaloriesConsumed - totalCaloriesBurned;
 
   const goalMessage = userProfile?.goal === 'gain' ? 'Gaining Weight' : 
@@ -115,11 +176,11 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <AiCalorieGoalCalculator />
-          <MealTracker />
+          <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
+          <MealTracker onCaloriesAdd={handleCaloriesAdd} />
         </div>
 
-        <AiWorkoutTracker />
+        <AiWorkoutTracker onWorkoutAdd={handleWorkoutAdd} />
       </div>
     </div>
   );
