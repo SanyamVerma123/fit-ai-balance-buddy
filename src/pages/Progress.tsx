@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -256,15 +255,23 @@ export default function Progress() {
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
                 className="rounded-md border"
+                modifiers={{
+                  hasData: datesWithData
+                }}
+                modifiersStyles={{
+                  hasData: { 
+                    position: 'relative',
+                  }
+                }}
                 components={{
-                  Day: ({ date, ...props }) => {
+                  DayContent: ({ date }) => {
                     const hasData = datesWithData.some(dataDate => 
                       dataDate.toDateString() === date.toDateString()
                     );
                     
                     return (
-                      <div className="relative">
-                        <button {...props} />
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <span>{date.getDate()}</span>
                         {hasData && (
                           <Check className="w-3 h-3 text-green-600 absolute -top-1 -right-1" />
                         )}
