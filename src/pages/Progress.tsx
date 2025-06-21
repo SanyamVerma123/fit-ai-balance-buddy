@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, Scale, Target, Calendar as CalendarIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { WeeklyReport } from "@/components/WeeklyReport";
 
 interface WeightEntry {
   date: string;
@@ -183,180 +185,193 @@ export default function Progress() {
           </div>
         </div>
 
-        {/* Overall Progress Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-700">
-                <Scale className="w-5 h-5" />
-                Weight Progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
-              </div>
-              <p className="text-sm text-gray-600">
-                Current: {latestWeight} kg | Started: {firstWeight} kg
-              </p>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="daily" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="daily">Daily Progress</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly Report</TabsTrigger>
+          </TabsList>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-700">
-                <Target className="w-5 h-5" />
-                Goal Achievement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {userProfile?.goal === 'gain' ? 'Gaining' : userProfile?.goal === 'loss' ? 'Losing' : 'Maintaining'}
-              </div>
-              <p className="text-sm text-gray-600">
-                {Math.abs(weightChange)} kg {userProfile?.goal === 'gain' ? 'gained' : 'lost'} so far
-              </p>
-            </CardContent>
-          </Card>
+          <TabsContent value="daily" className="space-y-6">
+            {/* Overall Progress Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-700">
+                    <Scale className="w-5 h-5" />
+                    Weight Progress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Current: {latestWeight} kg | Started: {firstWeight} kg
+                  </p>
+                </CardContent>
+              </Card>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-700">
-                <TrendingUp className="w-5 h-5" />
-                AI Adjustment
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {calorieAdjustment > 0 ? '+' : ''}{calorieAdjustment} kcal
-              </div>
-              <p className="text-sm text-gray-600">
-                Recommended weekly adjustment
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-green-700">
+                    <Target className="w-5 h-5" />
+                    Goal Achievement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {userProfile?.goal === 'gain' ? 'Gaining' : userProfile?.goal === 'loss' ? 'Losing' : 'Maintaining'}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {Math.abs(weightChange)} kg {userProfile?.goal === 'gain' ? 'gained' : 'lost'} so far
+                  </p>
+                </CardContent>
+              </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Calendar with Data Indicators */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="w-5 h-5" />
-                Data Calendar
-              </CardTitle>
-              <CardDescription>
-                Dates with checkmarks have recorded data
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => date && setSelectedDate(date)}
-                className="rounded-md border"
-                modifiers={{
-                  hasData: datesWithData
-                }}
-                modifiersStyles={{
-                  hasData: { 
-                    position: 'relative',
-                  }
-                }}
-                components={{
-                  DayContent: ({ date }) => {
-                    const hasData = datesWithData.some(dataDate => 
-                      dataDate.toDateString() === date.toDateString()
-                    );
-                    
-                    return (
-                      <div className="relative w-full h-full flex items-center justify-center">
-                        <span>{date.getDate()}</span>
-                        {hasData && (
-                          <Check className="w-3 h-3 text-green-600 absolute -top-1 -right-1" />
-                        )}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-purple-700">
+                    <TrendingUp className="w-5 h-5" />
+                    AI Adjustment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {calorieAdjustment > 0 ? '+' : ''}{calorieAdjustment} kcal
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Recommended weekly adjustment
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Calendar with Data Indicators */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarIcon className="w-5 h-5" />
+                    Data Calendar
+                  </CardTitle>
+                  <CardDescription>
+                    Dates with checkmarks have recorded data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    className="rounded-md border"
+                    modifiers={{
+                      hasData: datesWithData
+                    }}
+                    modifiersStyles={{
+                      hasData: { 
+                        position: 'relative',
+                      }
+                    }}
+                    components={{
+                      DayContent: ({ date }) => {
+                        const hasData = datesWithData.some(dataDate => 
+                          dataDate.toDateString() === date.toDateString()
+                        );
+                        
+                        return (
+                          <div className="relative w-full h-full flex items-center justify-center">
+                            <span>{date.getDate()}</span>
+                            {hasData && (
+                              <Check className="w-3 h-3 text-green-600 absolute -top-1 -right-1" />
+                            )}
+                          </div>
+                        );
+                      }
+                    }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Weight Entry */}
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle>Record Weight</CardTitle>
+                  <CardDescription>
+                    Add weight for {selectedDate.toDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      value={newWeight}
+                      onChange={(e) => setNewWeight(e.target.value)}
+                      placeholder="Enter current weight"
+                      step="0.1"
+                    />
+                  </div>
+                  <Button onClick={handleAddWeight} className="w-full">
+                    Record Weight
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Selected Date Details */}
+            {selectedDateData && (
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle>Data for {selectedDate.toDateString()}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600">
+                        {selectedDateData.totalCalories}
                       </div>
-                    );
-                  }
-                }}
-              />
-            </CardContent>
-          </Card>
+                      <div className="text-sm text-gray-600">Calories Intake</div>
+                    </div>
+                    <div className="text-center p-3 bg-green-50 rounded-lg">
+                      <div className="text-lg font-bold text-green-600">
+                        {selectedDateData.totalProtein}g
+                      </div>
+                      <div className="text-sm text-gray-600">Protein</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 rounded-lg">
+                      <div className="text-lg font-bold text-orange-600">
+                        {selectedDateData.totalCarbs}g
+                      </div>
+                      <div className="text-sm text-gray-600">Carbohydrates</div>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <div className="text-lg font-bold text-purple-600">
+                        {selectedDateData.caloriesBurned}
+                      </div>
+                      <div className="text-sm text-gray-600">Calories Burned</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-between items-center">
+                    <Badge variant={selectedDateData.exerciseType === 'Extensive' ? 'default' : 'secondary'}>
+                      {selectedDateData.exerciseType} Exercise
+                    </Badge>
+                    {selectedDateData.weight && (
+                      <div className="text-lg font-medium">
+                        Weight: {selectedDateData.weight} kg
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-          {/* Weight Entry */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle>Record Weight</CardTitle>
-              <CardDescription>
-                Add weight for {selectedDate.toDateString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="weight">Weight (kg)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  value={newWeight}
-                  onChange={(e) => setNewWeight(e.target.value)}
-                  placeholder="Enter current weight"
-                  step="0.1"
-                />
-              </div>
-              <Button onClick={handleAddWeight} className="w-full">
-                Record Weight
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Selected Date Details */}
-        {selectedDateData && (
-          <Card className="border-0 shadow-lg mt-6">
-            <CardHeader>
-              <CardTitle>Data for {selectedDate.toDateString()}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-lg font-bold text-blue-600">
-                    {selectedDateData.totalCalories}
-                  </div>
-                  <div className="text-sm text-gray-600">Calories Intake</div>
-                </div>
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-lg font-bold text-green-600">
-                    {selectedDateData.totalProtein}g
-                  </div>
-                  <div className="text-sm text-gray-600">Protein</div>
-                </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
-                  <div className="text-lg font-bold text-orange-600">
-                    {selectedDateData.totalCarbs}g
-                  </div>
-                  <div className="text-sm text-gray-600">Carbohydrates</div>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-lg font-bold text-purple-600">
-                    {selectedDateData.caloriesBurned}
-                  </div>
-                  <div className="text-sm text-gray-600">Calories Burned</div>
-                </div>
-              </div>
-              
-              <div className="mt-4 flex justify-between items-center">
-                <Badge variant={selectedDateData.exerciseType === 'Extensive' ? 'default' : 'secondary'}>
-                  {selectedDateData.exerciseType} Exercise
-                </Badge>
-                {selectedDateData.weight && (
-                  <div className="text-lg font-medium">
-                    Weight: {selectedDateData.weight} kg
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="weekly">
+            <WeeklyReport />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

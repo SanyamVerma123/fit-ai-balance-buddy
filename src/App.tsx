@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import WeightLoss from "./pages/WeightLoss";
 import WeightMaintain from "./pages/WeightMaintain";
 import Workouts from "./pages/Workouts";
 import Progress from "./pages/Progress";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AiCoach from "./pages/AiCoach";
 
@@ -37,6 +39,7 @@ const AppContent = () => {
             <Route path="/weight-maintain" element={<WeightMaintain />} />
             <Route path="/workouts" element={<Workouts />} />
             <Route path="/progress" element={<Progress />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/ai-coach" element={<AiCoach />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
