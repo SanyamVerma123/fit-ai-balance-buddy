@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,27 +8,23 @@ import { Bot, Send, User, Mic, MicOff } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useConversationManager, Message } from "@/hooks/useConversationManager";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
-import { ConversationSidebar } from "@/components/ConversationSidebar";
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: string;
+}
 
 const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { updateProfile } = useUserProfile();
+  const scrollRef = useRef<HTMLDivElement>(null);
   
-  const {
-    conversations,
-    currentConversationId,
-    setCurrentConversationId,
-    createNewConversation,
-    updateConversationTitle,
-    addMessageToConversation,
-    deleteConversation,
-    getCurrentConversation
-  } = useConversationManager();
-
   const {
     isListening,
     transcript,
@@ -38,9 +34,6 @@ const AiCoach = () => {
     resetTranscript
   } = useVoiceInput();
 
-  const currentConversation = getCurrentConversation();
-  const messages = currentConversation?.messages || [];
-
   useEffect(() => {
     if (transcript) {
       setNewMessage(transcript);
@@ -48,10 +41,22 @@ const AiCoach = () => {
   }, [transcript]);
 
   useEffect(() => {
-    if (conversations.length === 0) {
-      createNewConversation();
+    // Initialize with welcome message
+    if (messages.length === 0) {
+      setMessages([{
+        id: '1',
+        text: "Hey! I'm your AI fitness coach. I can help you track your food, workouts, weight, and answer any fitness questions. What would you like to do today?",
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      }]);
     }
   }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const updateUserData = (aiResponse: string, userMessage: string) => {
     try {
@@ -186,7 +191,7 @@ const AiCoach = () => {
       content: msg.text
     }));
 
-    const context = `You are a friendly AI fitness coach. Keep responses short, conversational, and helpful (max 2-3 sentences). Remember our conversation history. User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
+    const context = `You are a friendly AI fitness coach. Keep responses very short and conversational (1-2 sentences max). Remember our conversation history. User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
 
 When users mention food, workouts, weight, or profile changes, include these commands:
 - FOOD_UPDATE: foodname:calories, foodname2:calories2
@@ -210,7 +215,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
             ...recentHistory,
             { role: 'user', content: userMessage }
           ],
-          max_tokens: 150,
+          max_tokens: 100,
           temperature: 0.7,
         }),
       });
@@ -226,7 +231,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !currentConversationId) return;
+    if (!newMessage.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -235,12 +240,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
       timestamp: new Date().toISOString()
     };
 
-    addMessageToConversation(currentConversationId, userMessage);
-
-    // Update conversation title if this is the first user message
-    if (currentConversation && currentConversation.messages.length === 1) {
-      updateConversationTitle(currentConversationId, newMessage);
-    }
+    setMessages(prev => [...prev, userMessage]);
 
     const currentMessage = newMessage;
     setNewMessage('');
@@ -248,7 +248,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(currentMessage, currentConversation?.messages || []);
+      const aiResponse = await getAIResponse(currentMessage, messages);
       
       updateUserData(aiResponse, currentMessage);
       
@@ -263,7 +263,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
         timestamp: new Date().toISOString()
       };
 
-      addMessageToConversation(currentConversationId, aiMessage);
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error getting AI response:', error);
     } finally {
@@ -287,120 +287,110 @@ Be conversational and encouraging. Give brief, helpful advice.`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex">
-      <ConversationSidebar
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        onSelectConversation={setCurrentConversationId}
-        onNewConversation={createNewConversation}
-        onDeleteConversation={deleteConversation}
-      />
-      
-      <div className="flex-1 p-6">
-        <div className="flex items-center gap-4 mb-8">
-          <SidebarTrigger />
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              AI Fitness Coach
-            </h1>
-            <p className="text-gray-600">Your intelligent fitness companion with conversation memory</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 p-6">
+      <div className="flex items-center gap-4 mb-8">
+        <SidebarTrigger />
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            AI Fitness Coach
+          </h1>
+          <p className="text-gray-600">Your intelligent fitness companion with conversation memory</p>
         </div>
-
-        <Card className="max-w-4xl mx-auto border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="w-6 h-6 text-blue-600" />
-              Smart Conversation
-            </CardTitle>
-            <CardDescription>
-              Chat naturally with your AI coach. I'll remember our conversations and help you stay on track!
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-96 mb-4 p-4 border rounded-lg bg-gray-50">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex items-start gap-3 ${
-                      message.sender === 'user' ? 'flex-row-reverse' : ''
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.sender === 'user' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-purple-500 text-white'
-                    }`}>
-                      {message.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                    </div>
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      message.sender === 'user'
-                        ? 'bg-blue-500 text-white ml-auto'
-                        : 'bg-white border shadow-sm'
-                    }`}>
-                      <p className="text-sm">{message.text}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
-                      <Bot className="w-4 h-4" />
-                    </div>
-                    <div className="bg-white border shadow-sm px-4 py-2 rounded-lg">
-                      <p className="text-sm text-gray-500">Thinking...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            <div className="flex gap-2">
-              <Input
-                placeholder={isListening ? "Listening..." : "Tell me about your day..."}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1"
-                disabled={isLoading}
-              />
-              
-              {isSupported && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleVoiceInput}
-                  className={`${isListening ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
-                  disabled={isLoading}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </Button>
-              )}
-              
-              <Button 
-                onClick={sendMessage} 
-                disabled={isLoading || !newMessage.trim()}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800">
-                <strong>Try saying:</strong> "I had eggs for breakfast", "Did 30 minutes of yoga", "My weight is 68kg" 
-                {isSupported && <span> - or use the mic button to speak!</span>}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card className="max-w-4xl mx-auto border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-6 h-6 text-blue-600" />
+            Smart Conversation
+          </CardTitle>
+          <CardDescription>
+            Chat naturally with your AI coach. I'll remember our conversations and help you stay on track!
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-96 mb-4 p-4 border rounded-lg bg-gray-50" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex items-start gap-3 ${
+                    message.sender === 'user' ? 'flex-row-reverse' : ''
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    message.sender === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-purple-500 text-white'
+                  }`}>
+                    {message.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                  </div>
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.sender === 'user'
+                      ? 'bg-blue-500 text-white ml-auto'
+                      : 'bg-white border shadow-sm'
+                  }`}>
+                    <p className="text-sm">{message.text}</p>
+                    <p className={`text-xs mt-1 ${
+                      message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    }`}>
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="bg-white border shadow-sm px-4 py-2 rounded-lg">
+                    <p className="text-sm text-gray-500">Thinking...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder={isListening ? "Listening..." : "Tell me about your day..."}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1"
+              disabled={isLoading}
+            />
+            
+            {isSupported && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleVoiceInput}
+                className={`${isListening ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                disabled={isLoading}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
+            )}
+            
+            <Button 
+              onClick={sendMessage} 
+              disabled={isLoading || !newMessage.trim()}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800">
+              <strong>Try saying:</strong> "I had eggs for breakfast", "Did 30 minutes of yoga", "My weight is 68kg" 
+              {isSupported && <span> - or use the mic button to speak!</span>}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
