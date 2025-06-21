@@ -40,6 +40,15 @@ export const useUserProfile = () => {
       const updatedProfile = { ...userProfile, ...updates };
       setUserProfile(updatedProfile);
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+      return updatedProfile;
+    }
+    return null;
+  };
+
+  const refreshProfile = () => {
+    const stored = localStorage.getItem('userProfile');
+    if (stored) {
+      setUserProfile(JSON.parse(stored));
     }
   };
 
@@ -48,5 +57,6 @@ export const useUserProfile = () => {
     isOnboarded,
     completeOnboarding,
     updateProfile,
+    refreshProfile,
   };
 };

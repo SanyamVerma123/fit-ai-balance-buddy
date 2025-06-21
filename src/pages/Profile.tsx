@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,21 +22,43 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Profile() {
-  const { userProfile, updateProfile } = useUserProfile();
+  const { userProfile, updateProfile, refreshProfile } = useUserProfile();
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    name: userProfile?.name || '',
-    age: userProfile?.age || 25,
-    gender: userProfile?.gender || 'male',
-    height: userProfile?.height || 170,
-    weight: userProfile?.weight || 70,
-    goal: userProfile?.goal || 'maintain',
-    targetWeight: userProfile?.targetWeight || 70,
-    activityLevel: userProfile?.activityLevel || 'moderate',
-    dietPreference: userProfile?.dietPreference || 'mixed',
-    workoutLocation: userProfile?.workoutLocation || 'gym',
+    name: '',
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    goal: '',
+    targetWeight: '',
+    activityLevel: '',
+    dietPreference: '',
+    workoutLocation: '',
   });
+
+  // Load profile data when component mounts or userProfile changes
+  useEffect(() => {
+    refreshProfile();
+  }, []);
+
+  useEffect(() => {
+    if (userProfile) {
+      setFormData({
+        name: userProfile.name || '',
+        age: userProfile.age?.toString() || '',
+        gender: userProfile.gender || '',
+        height: userProfile.height?.toString() || '',
+        weight: userProfile.weight?.toString() || '',
+        goal: userProfile.goal || '',
+        targetWeight: userProfile.targetWeight?.toString() || '',
+        activityLevel: userProfile.activityLevel || '',
+        dietPreference: userProfile.dietPreference || '',
+        workoutLocation: userProfile.workoutLocation || '',
+      });
+    }
+  }, [userProfile]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -46,7 +68,20 @@ export default function Profile() {
   };
 
   const handleSave = () => {
-    updateProfile(formData);
+    const updatedProfile = {
+      name: formData.name,
+      age: Number(formData.age) || 25,
+      gender: formData.gender as 'male' | 'female' | 'other',
+      height: Number(formData.height) || 170,
+      weight: Number(formData.weight) || 70,
+      goal: formData.goal as 'gain' | 'loss' | 'maintain',
+      targetWeight: Number(formData.targetWeight) || 70,
+      activityLevel: formData.activityLevel as 'sedentary' | 'light' | 'moderate' | 'very' | 'extra',
+      dietPreference: formData.dietPreference as 'vegetarian' | 'non-vegetarian' | 'mixed',
+      workoutLocation: formData.workoutLocation as 'gym' | 'home' | 'outdoor',
+    };
+
+    updateProfile(updatedProfile);
     toast({
       title: "Profile Updated",
       description: "Your profile has been successfully updated!",
@@ -54,7 +89,6 @@ export default function Profile() {
   };
 
   const handleClearAllData = () => {
-    // Clear all stored data
     localStorage.removeItem('userProfile');
     localStorage.removeItem('onboardingComplete');
     localStorage.removeItem('dailyFoodLog');
@@ -67,7 +101,6 @@ export default function Profile() {
       variant: "destructive",
     });
     
-    // Reload the page to restart onboarding
     window.location.reload();
   };
 
@@ -85,7 +118,6 @@ export default function Profile() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">
-          {/* Personal Information */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -110,7 +142,7 @@ export default function Profile() {
                     id="age"
                     type="number"
                     value={formData.age}
-                    onChange={(e) => handleInputChange('age', Number(e.target.value))}
+                    onChange={(e) => handleInputChange('age', e.target.value)}
                     placeholder="Enter your age"
                   />
                 </div>
@@ -136,7 +168,7 @@ export default function Profile() {
                     id="height"
                     type="number"
                     value={formData.height}
-                    onChange={(e) => handleInputChange('height', Number(e.target.value))}
+                    onChange={(e) => handleInputChange('height', e.target.value)}
                     placeholder="Enter your height"
                   />
                 </div>
@@ -149,7 +181,7 @@ export default function Profile() {
                     id="weight"
                     type="number"
                     value={formData.weight}
-                    onChange={(e) => handleInputChange('weight', Number(e.target.value))}
+                    onChange={(e) => handleInputChange('weight', e.target.value)}
                     placeholder="Enter your weight"
                     step="0.1"
                   />
@@ -160,7 +192,7 @@ export default function Profile() {
                     id="targetWeight"
                     type="number"
                     value={formData.targetWeight}
-                    onChange={(e) => handleInputChange('targetWeight', Number(e.target.value))}
+                    onChange={(e) => handleInputChange('targetWeight', e.target.value)}
                     placeholder="Enter target weight"
                     step="0.1"
                   />
@@ -169,7 +201,6 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Fitness Goals */}
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -183,7 +214,7 @@ export default function Profile() {
                   <Label htmlFor="goal">Fitness Goal</Label>
                   <Select value={formData.goal} onValueChange={(value) => handleInputChange('goal', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select goal" />
+                      <SelectValue placeholder="Select your fitness goal" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="gain">Weight Gain</SelectItem>
@@ -196,7 +227,7 @@ export default function Profile() {
                   <Label htmlFor="activityLevel">Activity Level</Label>
                   <Select value={formData.activityLevel} onValueChange={(value) => handleInputChange('activityLevel', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select activity level" />
+                      <SelectValue placeholder="Select your activity level" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="sedentary">Sedentary</SelectItem>
@@ -214,7 +245,7 @@ export default function Profile() {
                   <Label htmlFor="dietPreference">Diet Preference</Label>
                   <Select value={formData.dietPreference} onValueChange={(value) => handleInputChange('dietPreference', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select diet preference" />
+                      <SelectValue placeholder="Select your diet preference" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="vegetarian">Vegetarian</SelectItem>
@@ -227,7 +258,7 @@ export default function Profile() {
                   <Label htmlFor="workoutLocation">Workout Location</Label>
                   <Select value={formData.workoutLocation} onValueChange={(value) => handleInputChange('workoutLocation', value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select workout location" />
+                      <SelectValue placeholder="Select your workout location" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="gym">Gym</SelectItem>
@@ -240,7 +271,6 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
           <div className="flex gap-4">
             <Button onClick={handleSave} className="flex-1">
               Save Changes
