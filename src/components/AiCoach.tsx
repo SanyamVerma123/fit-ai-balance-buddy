@@ -1,38 +1,60 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User } from "lucide-react";
+import { Bot, Send, User, Mic, MicOff } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: string;
-}
+import { useConversationManager, Message } from "@/hooks/useConversationManager";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { ConversationSidebar } from "@/components/ConversationSidebar";
 
 const AiCoach = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "Hello! I'm your AI fitness coach. I can help you with fitness advice AND automatically update your daily data. Just tell me what you ate, your workouts, weight changes, or ask me to update your profile - I'll handle it all for you!",
-      sender: 'ai',
-      timestamp: new Date().toISOString()
-    }
-  ]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { updateProfile } = useUserProfile();
+  
+  const {
+    conversations,
+    currentConversationId,
+    setCurrentConversationId,
+    createNewConversation,
+    updateConversationTitle,
+    addMessageToConversation,
+    deleteConversation,
+    getCurrentConversation
+  } = useConversationManager();
+
+  const {
+    isListening,
+    transcript,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useVoiceInput();
+
+  const currentConversation = getCurrentConversation();
+  const messages = currentConversation?.messages || [];
+
+  useEffect(() => {
+    if (transcript) {
+      setNewMessage(transcript);
+    }
+  }, [transcript]);
+
+  useEffect(() => {
+    if (conversations.length === 0) {
+      createNewConversation();
+    }
+  }, []);
 
   const updateUserData = (aiResponse: string, userMessage: string) => {
     try {
-      // Check if AI response contains data updates
       const today = new Date().toDateString();
       
       // Parse food data
@@ -58,8 +80,8 @@ const AiCoach = () => {
         
         localStorage.setItem('dailyFoodLog', JSON.stringify(currentFoodLog));
         toast({
-          title: "Food Updated",
-          description: "Added new food items to your daily log",
+          title: "Food Added",
+          description: "Updated your daily food log",
         });
       }
 
@@ -86,8 +108,8 @@ const AiCoach = () => {
         
         localStorage.setItem('dailyWorkoutLog', JSON.stringify(currentWorkoutLog));
         toast({
-          title: "Workout Updated",
-          description: "Added new workout to your daily log",
+          title: "Workout Added",
+          description: "Updated your workout log",
         });
       }
 
@@ -107,8 +129,6 @@ const AiCoach = () => {
         
         currentWeightEntries.push(newWeight);
         localStorage.setItem('weightEntries', JSON.stringify(currentWeightEntries));
-        
-        // Also update profile weight
         updateProfile({ weight });
         
         toast({
@@ -152,35 +172,29 @@ const AiCoach = () => {
     }
   };
 
-  const getAIResponse = async (userMessage: string) => {
+  const getAIResponse = async (userMessage: string, conversationHistory: Message[]) => {
     const API_KEY = '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';
     
-    // Get user context
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
     const workoutLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
     const weightEntries = JSON.parse(localStorage.getItem('weightEntries') || '[]');
 
-    const context = `You are a professional fitness coach and nutritionist with the ability to update user data. User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}. Recent food intake: ${foodLog.slice(-5).map((f: any) => f.name).join(', ')}. Recent workouts: ${workoutLog.slice(-3).map((w: any) => w.name).join(', ')}. Current weight trend: ${weightEntries.slice(-3).map((w: any) => w.weight).join(', ')}kg.
+    // Build conversation context from history
+    const recentHistory = conversationHistory.slice(-10).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.text
+    }));
 
-IMPORTANT: When the user tells you about food they ate, workouts they did, weight changes, or wants to update their profile, you MUST include special commands in your response:
+    const context = `You are a friendly AI fitness coach. Keep responses short, conversational, and helpful (max 2-3 sentences). Remember our conversation history. User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
 
-- For food: FOOD_UPDATE: foodname:calories, foodname2:calories2
-- For workouts: WORKOUT_UPDATE: workoutname:duration, workoutname2:duration2
-- For weight: WEIGHT_UPDATE: weightvalue
-- For profile: PROFILE_UPDATE: goal:value, targetWeight:value, activityLevel:value
+When users mention food, workouts, weight, or profile changes, include these commands:
+- FOOD_UPDATE: foodname:calories, foodname2:calories2
+- WORKOUT_UPDATE: workoutname:duration, workoutname2:duration2  
+- WEIGHT_UPDATE: weightvalue
+- PROFILE_UPDATE: goal:value, targetWeight:value, activityLevel:value
 
-Examples:
-User: "I ate an apple and a banana"
-Your response: "Great healthy choices! FOOD_UPDATE: Apple:80, Banana:105 These fruits provide good natural sugars and fiber."
-
-User: "I did 30 minutes of running"
-Your response: "Excellent cardio workout! WORKOUT_UPDATE: Running:30 That should burn approximately 300-400 calories."
-
-User: "My weight today is 72kg"
-Your response: "Thanks for the update! WEIGHT_UPDATE: 72 I've recorded your current weight."
-
-Always provide helpful advice along with the data updates. Be encouraging and specific.`;
+Be conversational and encouraging. Give brief, helpful advice.`;
 
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -193,9 +207,10 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
           model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             { role: 'system', content: context },
+            ...recentHistory,
             { role: 'user', content: userMessage }
           ],
-          max_tokens: 200,
+          max_tokens: 150,
           temperature: 0.7,
         }),
       });
@@ -203,7 +218,7 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
       if (!response.ok) throw new Error('API request failed');
       
       const data = await response.json();
-      return data.choices[0]?.message?.content || 'I apologize, but I cannot process your request right now. Please try again.';
+      return data.choices[0]?.message?.content || 'Sorry, I had trouble understanding that. Could you try again?';
     } catch (error) {
       console.error('AI Coach API Error:', error);
       return 'I apologize, but I cannot connect right now. Please check your connection and try again.';
@@ -211,7 +226,7 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !currentConversationId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -220,15 +235,21 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    addMessageToConversation(currentConversationId, userMessage);
+
+    // Update conversation title if this is the first user message
+    if (currentConversation && currentConversation.messages.length === 1) {
+      updateConversationTitle(currentConversationId, newMessage);
+    }
+
     const currentMessage = newMessage;
     setNewMessage('');
+    resetTranscript();
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(currentMessage);
+      const aiResponse = await getAIResponse(currentMessage, currentConversation?.messages || []);
       
-      // Update user data based on AI response
       updateUserData(aiResponse, currentMessage);
       
       const aiMessage: Message = {
@@ -242,7 +263,7 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
         timestamp: new Date().toISOString()
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      addMessageToConversation(currentConversationId, aiMessage);
     } catch (error) {
       console.error('Error getting AI response:', error);
     } finally {
@@ -257,16 +278,32 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
     }
   };
 
+  const handleVoiceInput = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <div className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex">
+      <ConversationSidebar
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        onSelectConversation={setCurrentConversationId}
+        onNewConversation={createNewConversation}
+        onDeleteConversation={deleteConversation}
+      />
+      
+      <div className="flex-1 p-6">
         <div className="flex items-center gap-4 mb-8">
           <SidebarTrigger />
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               AI Fitness Coach
             </h1>
-            <p className="text-gray-600">Your personal AI trainer that updates your data automatically</p>
+            <p className="text-gray-600">Your intelligent fitness companion with conversation memory</p>
           </div>
         </div>
 
@@ -274,10 +311,10 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="w-6 h-6 text-blue-600" />
-              Smart Chat & Data Updates
+              Smart Conversation
             </CardTitle>
             <CardDescription>
-              Tell me what you ate, your workouts, weight, or ask me to update your profile - I'll handle everything!
+              Chat naturally with your AI coach. I'll remember our conversations and help you stay on track!
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -317,7 +354,7 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
                       <Bot className="w-4 h-4" />
                     </div>
                     <div className="bg-white border shadow-sm px-4 py-2 rounded-lg">
-                      <p className="text-sm text-gray-500">Coach is thinking and updating your data...</p>
+                      <p className="text-sm text-gray-500">Thinking...</p>
                     </div>
                   </div>
                 )}
@@ -326,13 +363,26 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
 
             <div className="flex gap-2">
               <Input
-                placeholder="Tell me what you ate, your workout, weight, or ask anything..."
+                placeholder={isListening ? "Listening..." : "Tell me about your day..."}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 className="flex-1"
                 disabled={isLoading}
               />
+              
+              {isSupported && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleVoiceInput}
+                  className={`${isListening ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                  disabled={isLoading}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </Button>
+              )}
+              
               <Button 
                 onClick={sendMessage} 
                 disabled={isLoading || !newMessage.trim()}
@@ -344,7 +394,8 @@ Always provide helpful advice along with the data updates. Be encouraging and sp
             
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-blue-800">
-                <strong>Try saying:</strong> "I ate a chicken sandwich and salad", "I did 45 minutes of yoga", "My weight is 68kg", or "Change my goal to weight loss"
+                <strong>Try saying:</strong> "I had eggs for breakfast", "Did 30 minutes of yoga", "My weight is 68kg" 
+                {isSupported && <span> - or use the mic button to speak!</span>}
               </p>
             </div>
           </CardContent>
