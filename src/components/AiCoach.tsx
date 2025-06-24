@@ -18,8 +18,8 @@ interface Message {
   timestamp: string;
 }
 
-// Add your permanent API key here for personal use
-const PERMANENT_API_KEY = ""; // Replace with your actual Groq API key
+// Your permanent API key for personal use
+const PERMANENT_API_KEY = "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";
 
 const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
@@ -51,22 +51,13 @@ const AiCoach = () => {
     if (messages.length === 0) {
       setMessages([{
         id: '1',
-        text: "Hey! I'm your personal AI fitness coach. I can help you with calculations, track your food, workouts, weight, and answer any fitness questions. I can do all the math for you - just ask! What would you like to do today?",
+        text: "Hey! I'm your personal AI fitness coach and calculator. I can help you with all kinds of calculations, track your food, workouts, weight, and answer any fitness questions. I excel at math - just ask me to calculate anything! What would you like to do today?",
         sender: 'ai',
         timestamp: new Date().toISOString()
       }]);
       
-      // Use permanent API key if available, otherwise check localStorage
-      if (PERMANENT_API_KEY) {
-        setApiKey(PERMANENT_API_KEY);
-      } else {
-        const storedApiKey = localStorage.getItem('groq_api_key');
-        if (storedApiKey) {
-          setApiKey(storedApiKey);
-        } else {
-          setShowApiKeyDialog(true);
-        }
-      }
+      // Use permanent API key
+      setApiKey(PERMANENT_API_KEY);
     }
   }, []);
 
@@ -196,10 +187,7 @@ const AiCoach = () => {
   };
 
   const getAIResponse = async (userMessage: string, conversationHistory: Message[]) => {
-    const currentApiKey = PERMANENT_API_KEY || apiKey;
-    if (!currentApiKey) {
-      throw new Error('API key is required');
-    }
+    const currentApiKey = PERMANENT_API_KEY;
 
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
@@ -212,16 +200,18 @@ const AiCoach = () => {
       content: msg.text
     }));
 
-    const context = `You are a friendly AI fitness coach and calculator. You excel at math calculations and fitness guidance. Keep responses conversational and helpful. When users ask for calculations, show your work clearly. User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
+    const context = `You are a friendly AI fitness coach and advanced calculator. You excel at all types of mathematical calculations and fitness guidance. Always show your calculation work step-by-step when doing math. Keep responses conversational and helpful.
 
-For calculations: Show step-by-step math clearly.
+User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
+
+For calculations: Always show step-by-step math clearly with proper formatting.
 For fitness tracking, include these commands when relevant:
 - FOOD_UPDATE: foodname:calories, foodname2:calories2
 - WORKOUT_UPDATE: workoutname:duration, workoutname2:duration2  
 - WEIGHT_UPDATE: weightvalue
 - PROFILE_UPDATE: goal:value, targetWeight:value, activityLevel:value
 
-Be encouraging and provide clear, helpful responses with accurate calculations.`;
+Be encouraging, provide clear helpful responses with accurate calculations, and help manage their fitness journey.`;
 
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -237,14 +227,14 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
             ...recentHistory,
             { role: 'user', content: userMessage }
           ],
-          max_tokens: 150,
+          max_tokens: 200,
           temperature: 0.7,
         }),
       });
 
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error('Invalid API key. Please check your Groq API key.');
+          throw new Error('API key authentication failed. Please check your API key.');
         }
         throw new Error(`API request failed: ${response.status}`);
       }
@@ -253,42 +243,12 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
       return data.choices[0]?.message?.content || 'Sorry, I had trouble understanding that. Could you try again?';
     } catch (error) {
       console.error('AI Coach API Error:', error);
-      if (error instanceof Error && error.message.includes('Invalid API key')) {
-        if (!PERMANENT_API_KEY) {
-          setShowApiKeyDialog(true);
-          setApiKey('');
-          localStorage.removeItem('groq_api_key');
-        }
-        throw new Error('Invalid API key. Please check your Groq API key.');
-      }
       throw error;
-    }
-  };
-
-  const handleApiKeySubmit = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem('groq_api_key', apiKey.trim());
-      setShowApiKeyDialog(false);
-      toast({
-        title: "API Key Saved",
-        description: "You can now use the AI coach!",
-      });
     }
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
-    
-    const currentApiKey = PERMANENT_API_KEY || apiKey;
-    if (!currentApiKey) {
-      setShowApiKeyDialog(true);
-      toast({
-        title: "API Key Required",
-        description: "Please enter your Groq API key to use the AI coach.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -360,51 +320,16 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
           </h1>
           <p className="text-gray-600">Your intelligent fitness companion with advanced calculation abilities</p>
         </div>
-        {!PERMANENT_API_KEY && (
-          <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>API Key Settings</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Enter your Groq API key to use the AI coach:
-                </p>
-                <Input
-                  type="password"
-                  placeholder="Enter your Groq API key"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
-                />
-                <Button onClick={handleApiKeySubmit} className="w-full">
-                  Save API Key
-                </Button>
-                <p className="text-xs text-gray-500">
-                  Get your free API key from{' '}
-                  <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    Groq Console
-                  </a>
-                </p>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
       </div>
 
       <Card className="max-w-4xl mx-auto border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-blue-600" />
-            Smart AI Assistant
+            Smart AI Assistant - Ready to Help!
           </CardTitle>
           <CardDescription>
-            Chat with your AI coach for fitness guidance, calculations, and personalized advice!
+            Chat with your AI coach for fitness guidance, advanced calculations, and personalized advice!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -444,7 +369,7 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
                     <Bot className="w-4 h-4" />
                   </div>
                   <div className="bg-white border shadow-sm px-4 py-2 rounded-lg">
-                    <p className="text-sm text-gray-500">Thinking...</p>
+                    <p className="text-sm text-gray-500">Calculating and thinking...</p>
                   </div>
                 </div>
               )}
@@ -475,7 +400,7 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
             
             <Button 
               onClick={sendMessage} 
-              disabled={isLoading || !newMessage.trim() || (!PERMANENT_API_KEY && !apiKey)}
+              disabled={isLoading || !newMessage.trim()}
               className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             >
               <Send className="w-4 h-4" />
@@ -484,7 +409,7 @@ Be encouraging and provide clear, helpful responses with accurate calculations.`
           
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
-              <strong>Try asking:</strong> "Calculate my BMI", "I had eggs for breakfast", "Did 30 minutes of yoga", "What's 15% of 2000 calories?"
+              <strong>Try asking:</strong> "Calculate my BMI", "What's 25% of 2400 calories?", "I had eggs for breakfast", "Did 30 minutes of yoga", "Calculate protein needs for 70kg person"
               {isSupported && <span> - or use the mic button to speak!</span>}
             </p>
           </div>
