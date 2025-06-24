@@ -18,7 +18,7 @@ interface Message {
   timestamp: string;
 }
 
-// Your permanent API key for personal use
+// Updated API key - make sure this is your valid Groq API key
 const PERMANENT_API_KEY = "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";
 
 const AiCoach = () => {
@@ -214,6 +214,8 @@ For fitness tracking, include these commands when relevant:
 Be encouraging, provide clear helpful responses with accurate calculations, and help manage their fitness journey.`;
 
     try {
+      console.log('Making API request with key:', currentApiKey.substring(0, 10) + '...');
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -227,19 +229,26 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
             ...recentHistory,
             { role: 'user', content: userMessage }
           ],
-          max_tokens: 200,
+          max_tokens: 500,
           temperature: 0.7,
         }),
       });
 
+      console.log('API Response status:', response.status);
+      
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error details:', errorData);
+        
         if (response.status === 401) {
-          throw new Error('API key authentication failed. Please check your API key.');
+          throw new Error('Your API key seems to be invalid or expired. Please get a new API key from https://console.groq.com/');
         }
-        throw new Error(`API request failed: ${response.status}`);
+        throw new Error(`API request failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
       }
       
       const data = await response.json();
+      console.log('API Response data:', data);
+      
       return data.choices[0]?.message?.content || 'Sorry, I had trouble understanding that. Could you try again?';
     } catch (error) {
       console.error('AI Coach API Error:', error);
@@ -321,6 +330,18 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
           <p className="text-gray-600">Your intelligent fitness companion with advanced calculation abilities</p>
         </div>
       </div>
+
+      {!PERMANENT_API_KEY.startsWith('gsk_') && (
+        <Alert className="mb-6 border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            Your API key needs to be updated. Please get a valid Groq API key from{' '}
+            <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" className="underline">
+              https://console.groq.com/
+            </a>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card className="max-w-4xl mx-auto border-0 shadow-lg">
         <CardHeader>
