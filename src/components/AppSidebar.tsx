@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles, Bot, User } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles, Bot, User, MessageCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -39,6 +39,34 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
         icon: Home,
       },
       {
+        title: "AI Chat",
+        url: "/ai-coach",
+        icon: MessageCircle,
+      },
+    ];
+
+    if (userGoal === 'gain') {
+      baseItems.splice(2, 0, {
+        title: "Weight Gain",
+        url: "/weight-gain",
+        icon: TrendingUp,
+      });
+    } else if (userGoal === 'loss') {
+      baseItems.splice(2, 0, {
+        title: "Weight Loss",
+        url: "/weight-loss",
+        icon: TrendingDown,
+      });
+    } else if (userGoal === 'maintain') {
+      baseItems.splice(2, 0, {
+        title: "Maintain Weight",
+        url: "/weight-maintain",
+        icon: Activity,
+      });
+    }
+
+    baseItems.push(
+      {
         title: "Workouts",
         url: "/workouts",
         icon: Dumbbell,
@@ -49,36 +77,11 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
         icon: BarChart3,
       },
       {
-        title: "AI Coach",
-        url: "/ai-coach",
-        icon: Bot,
-      },
-      {
         title: "Profile",
         url: "/profile",
         icon: User,
-      },
-    ];
-
-    if (userGoal === 'gain') {
-      baseItems.splice(1, 0, {
-        title: "Weight Gain",
-        url: "/weight-gain",
-        icon: TrendingUp,
-      });
-    } else if (userGoal === 'loss') {
-      baseItems.splice(1, 0, {
-        title: "Weight Loss",
-        url: "/weight-loss",
-        icon: TrendingDown,
-      });
-    } else if (userGoal === 'maintain') {
-      baseItems.splice(1, 0, {
-        title: "Maintain Weight",
-        url: "/weight-maintain",
-        icon: Activity,
-      });
-    }
+      }
+    );
 
     return baseItems;
   };
