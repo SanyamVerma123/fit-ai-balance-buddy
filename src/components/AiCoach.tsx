@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Mic, MicOff } from "lucide-react";
+import { Bot, Send, User, Mic, MicOff, AlertCircle } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Message {
   id: string;
@@ -21,6 +22,8 @@ const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const { toast } = useToast();
   const { updateProfile } = useUserProfile();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -41,7 +44,7 @@ const AiCoach = () => {
   }, [transcript]);
 
   useEffect(() => {
-    // Initialize with welcome message
+    // Initialize with welcome message and check for API key
     if (messages.length === 0) {
       setMessages([{
         id: '1',
@@ -49,6 +52,14 @@ const AiCoach = () => {
         sender: 'ai',
         timestamp: new Date().toISOString()
       }]);
+      
+      // Check if API key is available
+      const storedApiKey = localStorage.getItem('groq_api_key') || import.meta.env.VITE_GROQ_API_KEY;
+      if (storedApiKey) {
+        setApiKey(storedApiKey);
+      } else {
+        setShowApiKeyInput(true);
+      }
     }
   }, []);
 
@@ -178,8 +189,10 @@ const AiCoach = () => {
   };
 
   const getAIResponse = async (userMessage: string, conversationHistory: Message[]) => {
-    const API_KEY = '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';
-    
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
     const workoutLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
@@ -205,11 +218,11 @@ Be conversational and encouraging. Give brief, helpful advice.`;
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          model: 'llama3-groq-70b-8192-tool-use-preview',
           messages: [
             { role: 'system', content: context },
             ...recentHistory,
@@ -220,18 +233,50 @@ Be conversational and encouraging. Give brief, helpful advice.`;
         }),
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Invalid API key. Please check your Groq API key.');
+        }
+        throw new Error(`API request failed: ${response.status}`);
+      }
       
       const data = await response.json();
       return data.choices[0]?.message?.content || 'Sorry, I had trouble understanding that. Could you try again?';
     } catch (error) {
       console.error('AI Coach API Error:', error);
-      return 'I apologize, but I cannot connect right now. Please check your connection and try again.';
+      if (error instanceof Error && error.message.includes('Invalid API key')) {
+        setShowApiKeyInput(true);
+        setApiKey('');
+        localStorage.removeItem('groq_api_key');
+        throw new Error('Invalid API key. Please enter a valid Groq API key.');
+      }
+      throw error;
+    }
+  };
+
+  const handleApiKeySubmit = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('groq_api_key', apiKey.trim());
+      setShowApiKeyInput(false);
+      toast({
+        title: "API Key Saved",
+        description: "You can now use the AI coach!",
+      });
     }
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
+    
+    if (!apiKey) {
+      setShowApiKeyInput(true);
+      toast({
+        title: "API Key Required",
+        description: "Please enter your Groq API key to use the AI coach.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -266,6 +311,13 @@ Be conversational and encouraging. Give brief, helpful advice.`;
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error getting AI response:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -309,6 +361,30 @@ Be conversational and encouraging. Give brief, helpful advice.`;
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {showApiKeyInput && (
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-3">
+                  <p>Please enter your Groq API key to use the AI coach:</p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      placeholder="Enter your Groq API key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleApiKeySubmit()}
+                    />
+                    <Button onClick={handleApiKeySubmit}>Save</Button>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Get your free API key from <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Groq Console</a>
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <ScrollArea className="h-96 mb-4 p-4 border rounded-lg bg-gray-50" ref={scrollRef}>
             <div className="space-y-4">
               {messages.map((message) => (
@@ -376,7 +452,7 @@ Be conversational and encouraging. Give brief, helpful advice.`;
             
             <Button 
               onClick={sendMessage} 
-              disabled={isLoading || !newMessage.trim()}
+              disabled={isLoading || !newMessage.trim() || !apiKey}
               className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             >
               <Send className="w-4 h-4" />
