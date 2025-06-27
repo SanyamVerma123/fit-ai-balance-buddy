@@ -20,6 +20,27 @@ interface Message {
 
 const PERMANENT_API_KEY = "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";
 
+// Food database for automatic recognition
+const FOOD_DATABASE: Record<string, { calories: number; unit: string; category: string }> = {
+  'chapati': { calories: 104, unit: 'piece', category: 'grain' },
+  'roti': { calories: 104, unit: 'piece', category: 'grain' },
+  'rice': { calories: 130, unit: 'cup', category: 'grain' },
+  'dal': { calories: 115, unit: 'cup', category: 'protein' },
+  'chicken': { calories: 165, unit: '100g', category: 'protein' },
+  'fish': { calories: 150, unit: '100g', category: 'protein' },
+  'egg': { calories: 70, unit: 'piece', category: 'protein' },
+  'banana': { calories: 105, unit: 'piece', category: 'fruit' },
+  'apple': { calories: 95, unit: 'piece', category: 'fruit' },
+  'milk': { calories: 150, unit: 'glass', category: 'dairy' },
+  'yogurt': { calories: 100, unit: 'cup', category: 'dairy' },
+  'bread': { calories: 80, unit: 'slice', category: 'grain' },
+  'pasta': { calories: 200, unit: 'cup', category: 'grain' },
+  'pizza': { calories: 300, unit: 'slice', category: 'mixed' },
+  'burger': { calories: 550, unit: 'piece', category: 'mixed' },
+  'salad': { calories: 150, unit: 'bowl', category: 'vegetable' },
+  'sandwich': { calories: 250, unit: 'piece', category: 'mixed' }
+};
+
 const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -37,6 +58,38 @@ const AiCoach = () => {
     resetTranscript
   } = useVoiceInput();
 
+  // Load persistent conversation on mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('aiCoachMessages');
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (error) {
+        console.error('Error loading saved messages:', error);
+        initializeConversation();
+      }
+    } else {
+      initializeConversation();
+    }
+  }, []);
+
+  // Save messages whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('aiCoachMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const initializeConversation = () => {
+    setMessages([{
+      id: '1',
+      text: "Hey! I'm your personal AI fitness coach and calculator. I can help you with all kinds of calculations, track your food, workouts, weight, and answer any fitness questions. I excel at math - just ask me to calculate anything! What would you like to do today?",
+      sender: 'ai',
+      timestamp: new Date().toISOString()
+    }]);
+  };
+
   useEffect(() => {
     if (transcript) {
       setNewMessage(transcript);
@@ -44,27 +97,101 @@ const AiCoach = () => {
   }, [transcript]);
 
   useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
-        id: '1',
-        text: "Hey! I'm your personal AI fitness coach and calculator. I can help you with all kinds of calculations, track your food, workouts, weight, and answer any fitness questions. I excel at math - just ask me to calculate anything! What would you like to do today?",
-        sender: 'ai',
-        timestamp: new Date().toISOString()
-      }]);
-    }
-  }, []);
-
-  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
+  const detectFoodMentions = (text: string): Array<{ food: string; quantity: number; data: any }> => {
+    const detectedFoods: Array<{ food: string; quantity: number; data: any }> = [];
+    const lowerText = text.toLowerCase();
+    
+    // Look for quantity patterns like "2 chapati", "1 apple", "ate chapati"
+    const quantityPattern = /(\d+)\s*(\w+)|ate\s+(\w+)|had\s+(\w+)|eating\s+(\w+)/g;
+    let match;
+
+    while ((match = quantityPattern.exec(lowerText)) !== null) {
+      let quantity = 1;
+      let foodName = '';
+
+      if (match[1] && match[2]) {
+        // Pattern: "2 chapati"
+        quantity = parseInt(match[1]);
+        foodName = match[2];
+      } else if (match[3] || match[4] || match[5]) {
+        // Pattern: "ate chapati", "had apple", "eating rice"
+        foodName = match[3] || match[4] || match[5];
+        quantity = 1;
+      }
+
+      if (foodName && FOOD_DATABASE[foodName]) {
+        detectedFoods.push({
+          food: foodName,
+          quantity,
+          data: FOOD_DATABASE[foodName]
+        });
+      }
+    }
+
+    // Also check for simple mentions without quantity words
+    Object.keys(FOOD_DATABASE).forEach(food => {
+      if (lowerText.includes(food) && !detectedFoods.some(df => df.food === food)) {
+        detectedFoods.push({
+          food,
+          quantity: 1,
+          data: FOOD_DATABASE[food]
+        });
+      }
+    });
+
+    return detectedFoods;
+  };
+
+  const addFoodToLog = (foodItems: Array<{ food: string; quantity: number; data: any }>) => {
+    const today = new Date().toDateString();
+    const currentFoodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
+    
+    foodItems.forEach(({ food, quantity, data }) => {
+      const totalCalories = data.calories * quantity;
+      const newFood = {
+        id: Date.now() + Math.random(),
+        name: food,
+        calories: totalCalories,
+        quantity: quantity,
+        unit: data.unit,
+        mealType: 'snack',
+        date: today,
+        timestamp: new Date().toISOString()
+      };
+      currentFoodLog.push(newFood);
+    });
+    
+    localStorage.setItem('dailyFoodLog', JSON.stringify(currentFoodLog));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'dailyFoodLog',
+      newValue: JSON.stringify(currentFoodLog)
+    }));
+    
+    const foodNames = foodItems.map(f => `${f.quantity} ${f.food}`).join(', ');
+    const totalCals = foodItems.reduce((sum, f) => sum + (f.data.calories * f.quantity), 0);
+    
+    toast({
+      title: "Food Automatically Added!",
+      description: `Added ${foodNames} (${totalCals} calories) to your daily log`,
+    });
+  };
+
   const updateUserData = (aiResponse: string, userMessage: string) => {
     try {
       const today = new Date().toDateString();
       
-      // Parse food data
+      // Check for food mentions in user message
+      const detectedFoods = detectFoodMentions(userMessage);
+      if (detectedFoods.length > 0) {
+        addFoodToLog(detectedFoods);
+      }
+      
+      // Parse food data from AI response
       const foodRegex = /FOOD_UPDATE:\s*(.+?)(?=\n|$)/g;
       let match = foodRegex.exec(aiResponse);
       if (match) {
@@ -93,11 +220,6 @@ const AiCoach = () => {
           key: 'dailyFoodLog',
           newValue: JSON.stringify(currentFoodLog)
         }));
-        
-        toast({
-          title: "Food Added",
-          description: "Updated your daily food log",
-        });
       }
 
       // Parse workout data
@@ -208,6 +330,8 @@ const AiCoach = () => {
 
 User profile: Goal: ${userProfile.goal}, Age: ${userProfile.age}, Weight: ${userProfile.weight}kg, Height: ${userProfile.height}cm, Activity Level: ${userProfile.activityLevel}, Diet: ${userProfile.dietPreference}.
 
+IMPORTANT: When users mention eating food (like "I had chapati" or "ate 2 apples"), automatically detect and log the food. You don't need to ask for confirmation.
+
 For calculations: Always show step-by-step math clearly with proper formatting.
 For fitness tracking, include these commands when relevant:
 - FOOD_UPDATE: foodname:calories, foodname2:calories2
@@ -225,7 +349,7 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          model: 'llama3-70b-8192',
           messages: [
             { role: 'system', content: context },
             ...recentHistory,
@@ -317,8 +441,17 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
     }
   };
 
+  const clearConversation = () => {
+    localStorage.removeItem('aiCoachMessages');
+    initializeConversation();
+    toast({
+      title: "Conversation Cleared",
+      description: "Chat history has been reset.",
+    });
+  };
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50">
+    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
       <div className="w-full px-3 sm:px-4 py-4 sm:py-6 max-w-full">
         <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
           <SidebarTrigger />
@@ -332,21 +465,32 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
 
         <Card className="w-full border-0 shadow-lg max-w-none">
           <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-4">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
-              <span className="truncate">Smart AI Assistant - Ready to Help!</span>
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
+                <CardTitle className="text-base sm:text-lg truncate">Smart AI Assistant - Ready to Help!</CardTitle>
+              </div>
+              <Button
+                onClick={clearConversation}
+                variant="outline"
+                size="sm"
+                className="flex-shrink-0 text-xs"
+              >
+                Clear Chat
+              </Button>
+            </div>
             <CardDescription className="text-xs sm:text-sm">
-              Chat with your AI coach for fitness guidance, advanced calculations, and personalized advice!
+              Chat with your AI coach for fitness guidance, advanced calculations, and personalized advice! 
+              Mention foods you eat and I'll automatically track them.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
-            <ScrollArea className="h-64 sm:h-80 mb-3 sm:mb-4 p-2 sm:p-3 border rounded-lg bg-gray-50 w-full overflow-x-hidden" ref={scrollRef}>
+            <ScrollArea className="h-64 sm:h-80 mb-3 sm:mb-4 p-2 sm:p-3 border rounded-lg bg-gray-50 w-full" ref={scrollRef}>
               <div className="space-y-2 sm:space-y-3 w-full">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex items-start gap-2 w-full max-w-full ${
+                    className={`flex items-start gap-2 w-full ${
                       message.sender === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   >
@@ -357,12 +501,12 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
                     }`}>
                       {message.sender === 'user' ? <User className="w-3 h-3 sm:w-4 sm:h-4" /> : <Bot className="w-3 h-3 sm:w-4 sm:h-4" />}
                     </div>
-                    <div className={`flex-1 min-w-0 max-w-[calc(100%-3rem)] px-2 sm:px-3 py-2 rounded-lg word-wrap overflow-wrap ${
+                    <div className={`flex-1 min-w-0 max-w-[calc(100%-3rem)] px-2 sm:px-3 py-2 rounded-lg ${
                       message.sender === 'user'
                         ? 'bg-blue-500 text-white'
                         : 'bg-white border shadow-sm'
                     }`}>
-                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words hyphens-auto">{message.text}</p>
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.text}</p>
                       <p className={`text-xs mt-1 ${
                         message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                       }`}>
@@ -384,9 +528,9 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
               </div>
             </ScrollArea>
 
-            <div className="flex gap-2 w-full max-w-full">
+            <div className="flex gap-2 w-full">
               <Input
-                placeholder={isListening ? "Listening..." : "Ask me anything - calculations, fitness advice, tracking..."}
+                placeholder={isListening ? "Listening..." : "Ask me anything or say 'I ate chapati'..."}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -417,8 +561,8 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
             </div>
             
             <div className="mt-3 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs sm:text-sm text-blue-800 leading-relaxed break-words">
-                <strong>Try asking:</strong> "Calculate my BMI", "What's 25% of 2400 calories?", "I had eggs for breakfast", "Did 30 minutes of yoga", "Calculate protein needs for 70kg person"
+              <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
+                <strong>Try saying:</strong> "I ate 2 chapati", "Calculate my BMI", "What's 25% of 2400 calories?", "Did 30 minutes of yoga"
                 {isSupported && <span className="hidden sm:inline"> - or use the mic button to speak!</span>}
               </p>
             </div>
