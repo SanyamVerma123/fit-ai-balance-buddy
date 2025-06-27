@@ -101,11 +101,11 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-70b-8192',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
@@ -143,6 +143,11 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
+      toast({
+        title: "AI Analysis Failed",
+        description: "Using estimated calories. Please check your internet connection.",
+        variant: "destructive"
+      });
       return {
         calories: 100,
         name: description
@@ -161,11 +166,11 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-70b-8192',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
@@ -192,8 +197,16 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
         const suggestions = JSON.parse(content);
         setAiSuggestions(suggestions);
         setShowSuggestions(true);
+        
+        toast({
+          title: "AI Suggestions Ready!",
+          description: `Generated ${suggestions.length} meal suggestions`,
+        });
+        
         return suggestions;
-      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse AI suggestions:', parseError);
+        // Fallback suggestions
         const fallbacks = {
           breakfast: [
             { name: "Oatmeal with banana", quantity: 1, unit: "cup", calories: 150 },
@@ -211,10 +224,21 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
         const fallbackSuggestions = fallbacks[mealType as keyof typeof fallbacks] || fallbacks.breakfast;
         setAiSuggestions(fallbackSuggestions);
         setShowSuggestions(true);
+        
+        toast({
+          title: "Meal Suggestions Ready!",
+          description: "Generated fallback suggestions",
+        });
+        
         return fallbackSuggestions;
       }
     } catch (error) {
       console.error('AI suggestion failed:', error);
+      toast({
+        title: "Network Error",
+        description: "Failed to get AI suggestions. Please check your connection and try again.",
+        variant: "destructive",
+      });
       return [];
     } finally {
       setIsProcessing(false);
@@ -389,29 +413,29 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
   const mealCalories = todayMealsForType.reduce((sum, meal) => sum + meal.calories, 0);
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
-      <CardHeader>
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50 w-full">
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Utensils className="w-5 h-5 text-green-600" />
-          Meal Tracker
+          <Utensils className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <span className="truncate">Meal Tracker</span>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs sm:text-sm">
           Track your meals with AI-powered analysis
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 w-full overflow-x-hidden">
         {/* Meal Type Selection */}
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-5 gap-1 sm:gap-2">
           {mealTypes.map((meal) => (
             <Button
               key={meal.value}
               variant={selectedMeal === meal.value ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedMeal(meal.value)}
-              className={selectedMeal === meal.value ? "bg-green-600 hover:bg-green-700" : ""}
+              className={`text-xs px-1 sm:px-2 ${selectedMeal === meal.value ? "bg-green-600 hover:bg-green-700" : ""}`}
             >
               <span className="mr-1">{meal.icon}</span>
-              <span className="hidden sm:inline">{meal.label}</span>
+              <span className="hidden sm:inline truncate">{meal.label}</span>
             </Button>
           ))}
         </div>
@@ -419,15 +443,15 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
         {/* Current Meal Summary */}
         <div className="bg-green-50 p-3 rounded-lg">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium capitalize">{selectedMeal} Today</h4>
-            <Badge variant="secondary">{mealCalories} kcal</Badge>
+            <h4 className="font-medium capitalize text-sm sm:text-base">{selectedMeal} Today</h4>
+            <Badge variant="secondary" className="text-xs">{mealCalories} kcal</Badge>
           </div>
           {todayMealsForType.length > 0 && (
             <div className="mt-2 space-y-1">
               {todayMealsForType.map((meal, index) => (
-                <div key={index} className="text-sm text-gray-600 flex justify-between">
-                  <span>{meal.name} ({meal.quantity} {meal.unit})</span>
-                  <span>{meal.calories} kcal</span>
+                <div key={index} className="text-xs sm:text-sm text-gray-600 flex justify-between">
+                  <span className="truncate mr-2">{meal.name} ({meal.quantity} {meal.unit})</span>
+                  <span className="flex-shrink-0">{meal.calories} kcal</span>
                 </div>
               ))}
             </div>
@@ -438,16 +462,16 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
         <Button 
           onClick={() => generateAIMealSuggestion(selectedMeal)}
           disabled={isProcessing}
-          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-xs sm:text-sm"
         >
           {isProcessing ? (
             <>
-              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+              <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
               Getting AI Suggestion...
             </>
           ) : (
             <>
-              <Brain className="w-4 h-4 mr-2" />
+              <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
               Get AI {selectedMeal} Suggestion
             </>
           )}
@@ -455,27 +479,27 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
 
         {/* AI Suggestions Display */}
         {showSuggestions && aiSuggestions.length > 0 && (
-          <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
+          <div className="border-2 border-purple-200 rounded-lg p-3 bg-purple-50 w-full overflow-hidden">
             <div className="flex justify-between items-center mb-3">
-              <h4 className="font-medium text-purple-700">AI {selectedMeal} Suggestions</h4>
+              <h4 className="font-medium text-purple-700 text-sm sm:text-base truncate">AI {selectedMeal} Suggestions</h4>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSuggestions(false)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </div>
             <div className="space-y-2">
               {aiSuggestions.map((suggestion, index) => (
-                <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
-                  <div>
-                    <div className="font-medium">{suggestion.name}</div>
-                    <div className="text-sm text-gray-600">
+                <div key={index} className="flex justify-between items-center bg-white p-2 sm:p-3 rounded border">
+                  <div className="min-w-0 flex-1 mr-2">
+                    <div className="font-medium text-xs sm:text-sm truncate">{suggestion.name}</div>
+                    <div className="text-xs text-gray-600 truncate">
                       {suggestion.quantity} {suggestion.unit} • {suggestion.calories} kcal
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
@@ -484,6 +508,7 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
                         setAiSuggestions(updatedSuggestions);
                         if (updatedSuggestions.length === 0) setShowSuggestions(false);
                       }}
+                      className="p-1"
                     >
                       <X className="w-3 h-3" />
                     </Button>
@@ -495,7 +520,7 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
                         setAiSuggestions(updatedSuggestions);
                         if (updatedSuggestions.length === 0) setShowSuggestions(false);
                       }}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 p-1"
                     >
                       <Check className="w-3 h-3" />
                     </Button>
@@ -569,27 +594,28 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
         </div>
 
         {/* Manual Food Entry */}
-        <div className="space-y-4 border-t pt-4">
-          <h4 className="font-medium flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
             Add Food Manually
           </h4>
           
           <div className="space-y-3">
             <div>
-              <Label htmlFor="foodName">Food Name</Label>
+              <Label htmlFor="foodName" className="text-xs sm:text-sm">Food Name</Label>
               <Input
                 id="foodName"
                 value={foodName}
                 onChange={(e) => setFoodName(e.target.value)}
                 placeholder={`e.g., Scrambled eggs (for ${selectedMeal})`}
                 disabled={isProcessing}
+                className="text-xs sm:text-sm"
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <Label htmlFor="quantity">Quantity</Label>
+                <Label htmlFor="quantity" className="text-xs sm:text-sm">Quantity</Label>
                 <Input
                   id="quantity"
                   type="number"
@@ -599,17 +625,18 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
                   disabled={isProcessing}
                   min="0.1"
                   step="0.1"
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="unit" className="text-xs sm:text-sm">Unit</Label>
                 <Select value={unit} onValueChange={setUnit} disabled={isProcessing}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((unitOption) => (
-                      <SelectItem key={unitOption.value} value={unitOption.value}>
+                      <SelectItem key={unitOption.value} value={unitOption.value} className="text-xs sm:text-sm">
                         {unitOption.label}
                       </SelectItem>
                     ))}
@@ -621,16 +648,16 @@ export const MealTracker = ({ onCaloriesAdd }: MealTrackerProps) => {
             <Button 
               onClick={handleAddFood}
               disabled={isProcessing || !foodName || !quantity}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-xs sm:text-sm"
             >
               {isProcessing ? (
                 <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   Analyzing...
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                   Add to {selectedMeal}
                 </>
               )}

@@ -1,15 +1,15 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Mic, MicOff, AlertCircle, Settings } from "lucide-react";
+import { Bot, Send, User, Mic, MicOff, AlertCircle } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Message {
   id: string;
@@ -18,15 +18,12 @@ interface Message {
   timestamp: string;
 }
 
-// Updated API key - your valid Groq API key for personal use
 const PERMANENT_API_KEY = "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";
 
 const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const { toast } = useToast();
   const { updateProfile } = useUserProfile();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -47,7 +44,6 @@ const AiCoach = () => {
   }, [transcript]);
 
   useEffect(() => {
-    // Initialize with welcome message and set API key
     if (messages.length === 0) {
       setMessages([{
         id: '1',
@@ -55,9 +51,6 @@ const AiCoach = () => {
         sender: 'ai',
         timestamp: new Date().toISOString()
       }]);
-      
-      // Use permanent API key
-      setApiKey(PERMANENT_API_KEY);
     }
   }, []);
 
@@ -96,7 +89,6 @@ const AiCoach = () => {
         });
         
         localStorage.setItem('dailyFoodLog', JSON.stringify(currentFoodLog));
-        // Trigger storage event to update other components
         window.dispatchEvent(new StorageEvent('storage', {
           key: 'dailyFoodLog',
           newValue: JSON.stringify(currentFoodLog)
@@ -122,7 +114,7 @@ const AiCoach = () => {
               id: Date.now() + Math.random(),
               name: name || workout,
               duration: parseInt(duration) || 30,
-              caloriesBurned: Math.round((parseInt(duration) || 30) * 5), // Rough estimate
+              caloriesBurned: Math.round((parseInt(duration) || 30) * 5),
               date: today,
               timestamp: new Date().toISOString()
             };
@@ -131,7 +123,6 @@ const AiCoach = () => {
         });
         
         localStorage.setItem('dailyWorkoutLog', JSON.stringify(currentWorkoutLog));
-        // Trigger storage event to update other components
         window.dispatchEvent(new StorageEvent('storage', {
           key: 'dailyWorkoutLog',
           newValue: JSON.stringify(currentWorkoutLog)
@@ -203,14 +194,11 @@ const AiCoach = () => {
   };
 
   const getAIResponse = async (userMessage: string, conversationHistory: Message[]) => {
-    const currentApiKey = PERMANENT_API_KEY;
-
     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
     const foodLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
     const workoutLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
     const weightEntries = JSON.parse(localStorage.getItem('weightEntries') || '[]');
 
-    // Build conversation context from history
     const recentHistory = conversationHistory.slice(-10).map(msg => ({
       role: msg.sender === 'user' ? 'user' : 'assistant',
       content: msg.text
@@ -230,12 +218,10 @@ For fitness tracking, include these commands when relevant:
 Be encouraging, provide clear helpful responses with accurate calculations, and help manage their fitness journey.`;
 
     try {
-      console.log('Making API request with key:', currentApiKey.substring(0, 10) + '...');
-      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${currentApiKey}`,
+          'Authorization': `Bearer ${PERMANENT_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -250,8 +236,6 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
         }),
       });
 
-      console.log('API Response status:', response.status);
-      
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API Error details:', errorData);
@@ -263,8 +247,6 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
       }
       
       const data = await response.json();
-      console.log('API Response data:', data);
-      
       return data.choices[0]?.message?.content || 'Sorry, I had trouble understanding that. Could you try again?';
     } catch (error) {
       console.error('AI Coach API Error:', error);
@@ -336,7 +318,7 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50">
       <div className="w-full px-3 sm:px-4 py-4 sm:py-6 max-w-full">
         <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
           <SidebarTrigger />
@@ -347,18 +329,6 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
             <p className="text-xs sm:text-sm text-gray-600 truncate">Your intelligent fitness companion with advanced calculation abilities</p>
           </div>
         </div>
-
-        {!PERMANENT_API_KEY.startsWith('gsk_') && (
-          <Alert className="mb-4 border-orange-200 bg-orange-50">
-            <AlertCircle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800 text-sm">
-              Your API key needs to be updated. Please get a valid Groq API key from{' '}
-              <a href="https://console.groq.com/" target="_blank" rel="noopener noreferrer" className="underline">
-                https://console.groq.com/
-              </a>
-            </AlertDescription>
-          </Alert>
-        )}
 
         <Card className="w-full border-0 shadow-lg max-w-none">
           <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-4">
@@ -371,12 +341,12 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-6">
-            <ScrollArea className="h-64 sm:h-80 mb-3 sm:mb-4 p-2 sm:p-3 border rounded-lg bg-gray-50 w-full" ref={scrollRef}>
+            <ScrollArea className="h-64 sm:h-80 mb-3 sm:mb-4 p-2 sm:p-3 border rounded-lg bg-gray-50 w-full overflow-x-hidden" ref={scrollRef}>
               <div className="space-y-2 sm:space-y-3 w-full">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex items-start gap-2 w-full ${
+                    className={`flex items-start gap-2 w-full max-w-full ${
                       message.sender === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   >
@@ -387,12 +357,12 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
                     }`}>
                       {message.sender === 'user' ? <User className="w-3 h-3 sm:w-4 sm:h-4" /> : <Bot className="w-3 h-3 sm:w-4 sm:h-4" />}
                     </div>
-                    <div className={`flex-1 min-w-0 max-w-[75%] sm:max-w-[80%] px-2 sm:px-3 py-2 rounded-lg ${
+                    <div className={`flex-1 min-w-0 max-w-[calc(100%-3rem)] px-2 sm:px-3 py-2 rounded-lg word-wrap overflow-wrap ${
                       message.sender === 'user'
                         ? 'bg-blue-500 text-white'
                         : 'bg-white border shadow-sm'
                     }`}>
-                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words word-wrap">{message.text}</p>
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words hyphens-auto">{message.text}</p>
                       <p className={`text-xs mt-1 ${
                         message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                       }`}>
@@ -414,7 +384,7 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
               </div>
             </ScrollArea>
 
-            <div className="flex gap-2 w-full">
+            <div className="flex gap-2 w-full max-w-full">
               <Input
                 placeholder={isListening ? "Listening..." : "Ask me anything - calculations, fitness advice, tracking..."}
                 value={newMessage}
@@ -447,7 +417,7 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
             </div>
             
             <div className="mt-3 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
+              <p className="text-xs sm:text-sm text-blue-800 leading-relaxed break-words">
                 <strong>Try asking:</strong> "Calculate my BMI", "What's 25% of 2400 calories?", "I had eggs for breakfast", "Did 30 minutes of yoga", "Calculate protein needs for 70kg person"
                 {isSupported && <span className="hidden sm:inline"> - or use the mic button to speak!</span>}
               </p>

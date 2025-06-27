@@ -4,9 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dumbbell, Clock, Plus, Brain, Home, Building, TreePine } from "lucide-react";
+import { Dumbbell, Plus, Brain, Home, Building, TreePine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -71,11 +70,11 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-70b-8192',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
@@ -117,6 +116,11 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
       }
     } catch (error) {
       console.error('AI workout analysis failed:', error);
+      toast({
+        title: "AI Analysis Failed",
+        description: "Using estimated calories. Please check your internet connection.",
+        variant: "destructive"
+      });
       return {
         calories: Math.floor(parseInt(time) * 5),
         name: exercise,
@@ -137,11 +141,11 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-70b-8192',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
@@ -172,7 +176,8 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
           title: "AI Workout Suggestions Ready!",
           description: `Generated ${suggestions.length} ${workoutType} exercises for ${location}`,
         });
-      } catch {
+      } catch (parseError) {
+        console.error('Failed to parse AI suggestions:', parseError);
         // Fallback suggestions
         const fallbackSuggestions = [
           {
@@ -202,8 +207,8 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
     } catch (error) {
       console.error('AI suggestions failed:', error);
       toast({
-        title: "Error",
-        description: "Failed to get AI suggestions. Please try again.",
+        title: "Network Error",
+        description: "Failed to get AI suggestions. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -270,67 +275,67 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
   };
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50">
-      <CardHeader>
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50 w-full">
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-orange-600" />
-          AI Workout Tracker
+          <Dumbbell className="w-5 h-5 text-orange-600 flex-shrink-0" />
+          <span className="truncate">AI Workout Tracker</span>
           {userProfile?.workoutLocation && (
-            <Badge variant="secondary" className="ml-2">
+            <Badge variant="secondary" className="ml-2 hidden sm:flex">
               {getLocationIcon(userProfile.workoutLocation)}
               <span className="ml-1 capitalize">{userProfile.workoutLocation}</span>
             </Badge>
           )}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-xs sm:text-sm">
           Get AI exercise suggestions and track workouts with calorie calculation
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 w-full overflow-x-hidden">
         {/* AI Exercise Suggestions */}
-        <div className="space-y-4">
-          <h4 className="font-medium flex items-center gap-2">
-            <Brain className="w-4 h-4" />
+        <div className="space-y-3">
+          <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+            <Brain className="w-3 h-3 sm:w-4 sm:h-4" />
             Get AI Exercise Suggestions
           </h4>
           
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {workoutTypes.map((type) => (
               <Button
                 key={type.value}
                 onClick={() => getAIWorkoutSuggestions(type.value)}
                 disabled={isGettingSuggestions}
                 variant="outline"
-                className="bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100"
+                className="bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 text-xs sm:text-sm p-2 h-auto"
               >
                 {isGettingSuggestions ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
                 ) : (
-                  <Brain className="w-4 h-4 mr-2" />
+                  <Brain className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 )}
-                {type.label}
+                <span className="truncate">{type.label}</span>
               </Button>
             ))}
           </div>
 
           {/* Display AI Suggestions */}
           {aiSuggestions.length > 0 && (
-            <div className="space-y-3 max-h-64 overflow-y-auto border-t pt-4">
-              <h5 className="font-medium text-gray-800">AI Exercise Suggestions:</h5>
+            <div className="space-y-2 max-h-64 overflow-y-auto border-t pt-3">
+              <h5 className="font-medium text-gray-800 text-sm sm:text-base">AI Exercise Suggestions:</h5>
               {aiSuggestions.map((suggestion, index) => (
-                <div key={index} className="p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                <div key={index} className="p-2 sm:p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h6 className="font-medium text-orange-700">{suggestion.name}</h6>
+                    <h6 className="font-medium text-orange-700 text-xs sm:text-sm truncate mr-2">{suggestion.name}</h6>
                     <Button
                       size="sm"
                       onClick={() => addSuggestedWorkout(suggestion)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-2 py-1 flex-shrink-0"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Add
                     </Button>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
+                  <div className="text-xs text-gray-600 space-y-1">
                     <div><strong>Sets:</strong> {suggestion.sets} | <strong>Reps:</strong> {suggestion.reps}</div>
                     <div><strong>Rest:</strong> {suggestion.rest_time}</div>
                     <div><strong>Instructions:</strong> {suggestion.instructions}</div>
@@ -343,27 +348,28 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
         </div>
 
         {/* Manual Workout Entry */}
-        <div className="space-y-4 border-t pt-4">
-          <h4 className="font-medium flex items-center gap-2">
-            <Plus className="w-4 h-4" />
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
             Add Custom Workout
           </h4>
           
           <div className="space-y-3">
             <div>
-              <Label htmlFor="workoutName">Exercise Name</Label>
+              <Label htmlFor="workoutName" className="text-xs sm:text-sm">Exercise Name</Label>
               <Input
                 id="workoutName"
                 value={workoutName}
                 onChange={(e) => setWorkoutName(e.target.value)}
                 placeholder="e.g., Running, Push-ups, Yoga"
                 disabled={isProcessing}
+                className="text-xs sm:text-sm"
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <Label htmlFor="duration">Duration (minutes)</Label>
+                <Label htmlFor="duration" className="text-xs sm:text-sm">Duration (minutes)</Label>
                 <Input
                   id="duration"
                   type="number"
@@ -372,10 +378,11 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
                   placeholder="30"
                   disabled={isProcessing}
                   min="1"
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="sets">Sets (optional)</Label>
+                <Label htmlFor="sets" className="text-xs sm:text-sm">Sets (optional)</Label>
                 <Input
                   id="sets"
                   type="number"
@@ -384,13 +391,14 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
                   placeholder="3"
                   disabled={isProcessing}
                   min="1"
+                  className="text-xs sm:text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <div>
-                <Label htmlFor="reps">Reps (optional)</Label>
+                <Label htmlFor="reps" className="text-xs sm:text-sm">Reps (optional)</Label>
                 <Input
                   id="reps"
                   type="number"
@@ -399,10 +407,11 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
                   placeholder="12"
                   disabled={isProcessing}
                   min="1"
+                  className="text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="weight">Weight kg (optional)</Label>
+                <Label htmlFor="weight" className="text-xs sm:text-sm">Weight kg (optional)</Label>
                 <Input
                   id="weight"
                   type="number"
@@ -412,6 +421,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
                   disabled={isProcessing}
                   min="0.5"
                   step="0.5"
+                  className="text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -419,16 +429,16 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
             <Button 
               onClick={handleAddWorkout}
               disabled={isProcessing || !workoutName || !duration}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-xs sm:text-sm"
             >
               {isProcessing ? (
                 <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   Analyzing...
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                   Add Workout
                 </>
               )}
