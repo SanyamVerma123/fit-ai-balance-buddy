@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,6 +85,9 @@ const AiCoach = () => {
               id: Date.now() + Math.random(),
               name: name || food,
               calories: parseInt(calories) || 100,
+              quantity: 1,
+              unit: 'serving',
+              mealType: 'snack',
               date: today,
               timestamp: new Date().toISOString()
             };
@@ -94,6 +96,12 @@ const AiCoach = () => {
         });
         
         localStorage.setItem('dailyFoodLog', JSON.stringify(currentFoodLog));
+        // Trigger storage event to update other components
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'dailyFoodLog',
+          newValue: JSON.stringify(currentFoodLog)
+        }));
+        
         toast({
           title: "Food Added",
           description: "Updated your daily food log",
@@ -114,6 +122,7 @@ const AiCoach = () => {
               id: Date.now() + Math.random(),
               name: name || workout,
               duration: parseInt(duration) || 30,
+              caloriesBurned: Math.round((parseInt(duration) || 30) * 5), // Rough estimate
               date: today,
               timestamp: new Date().toISOString()
             };
@@ -122,6 +131,12 @@ const AiCoach = () => {
         });
         
         localStorage.setItem('dailyWorkoutLog', JSON.stringify(currentWorkoutLog));
+        // Trigger storage event to update other components
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'dailyWorkoutLog',
+          newValue: JSON.stringify(currentWorkoutLog)
+        }));
+        
         toast({
           title: "Workout Added",
           description: "Updated your workout log",
@@ -321,20 +336,20 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <div className="w-full max-w-full px-4 py-6">
-        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
+    <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
+      <div className="w-full px-3 sm:px-4 py-4 sm:py-6 max-w-full">
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
           <SidebarTrigger />
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight">
               AI Fitness Coach & Calculator
             </h1>
-            <p className="text-sm sm:text-base text-gray-600 truncate">Your intelligent fitness companion with advanced calculation abilities</p>
+            <p className="text-xs sm:text-sm text-gray-600 truncate">Your intelligent fitness companion with advanced calculation abilities</p>
           </div>
         </div>
 
         {!PERMANENT_API_KEY.startsWith('gsk_') && (
-          <Alert className="mb-4 sm:mb-6 border-orange-200 bg-orange-50 mx-2 sm:mx-0">
+          <Alert className="mb-4 border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800 text-sm">
               Your API key needs to be updated. Please get a valid Groq API key from{' '}
@@ -345,53 +360,53 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
           </Alert>
         )}
 
-        <Card className="w-full max-w-none sm:max-w-4xl mx-auto border-0 shadow-lg">
-          <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" />
+        <Card className="w-full border-0 shadow-lg max-w-none">
+          <CardHeader className="px-3 sm:px-6 pb-3 sm:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" />
               <span className="truncate">Smart AI Assistant - Ready to Help!</span>
             </CardTitle>
-            <CardDescription className="text-sm sm:text-base">
+            <CardDescription className="text-xs sm:text-sm">
               Chat with your AI coach for fitness guidance, advanced calculations, and personalized advice!
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 sm:px-6">
-            <ScrollArea className="h-80 sm:h-96 mb-4 p-3 sm:p-4 border rounded-lg bg-gray-50" ref={scrollRef}>
-              <div className="space-y-3 sm:space-y-4">
+          <CardContent className="px-3 sm:px-6">
+            <ScrollArea className="h-64 sm:h-80 mb-3 sm:mb-4 p-2 sm:p-3 border rounded-lg bg-gray-50 w-full" ref={scrollRef}>
+              <div className="space-y-2 sm:space-y-3 w-full">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex items-start gap-2 sm:gap-3 ${
+                    className={`flex items-start gap-2 w-full ${
                       message.sender === 'user' ? 'flex-row-reverse' : ''
                     }`}
                   >
-                    <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
                       message.sender === 'user' 
                         ? 'bg-blue-500 text-white' 
                         : 'bg-purple-500 text-white'
                     }`}>
                       {message.sender === 'user' ? <User className="w-3 h-3 sm:w-4 sm:h-4" /> : <Bot className="w-3 h-3 sm:w-4 sm:h-4" />}
                     </div>
-                    <div className={`max-w-[250px] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
+                    <div className={`flex-1 min-w-0 max-w-[75%] sm:max-w-[80%] px-2 sm:px-3 py-2 rounded-lg ${
                       message.sender === 'user'
-                        ? 'bg-blue-500 text-white ml-auto'
+                        ? 'bg-blue-500 text-white'
                         : 'bg-white border shadow-sm'
                     }`}>
-                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{message.text}</p>
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap break-words word-wrap">{message.text}</p>
                       <p className={`text-xs mt-1 ${
                         message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                       }`}>
-                        {new Date(message.timestamp).toLocaleTimeString()}
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-purple-500 text-white flex items-center justify-center flex-shrink-0">
+                  <div className="flex items-start gap-2 w-full">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-purple-500 text-white flex items-center justify-center flex-shrink-0">
                       <Bot className="w-3 h-3 sm:w-4 sm:h-4" />
                     </div>
-                    <div className="bg-white border shadow-sm px-3 sm:px-4 py-2 rounded-lg">
+                    <div className="bg-white border shadow-sm px-2 sm:px-3 py-2 rounded-lg">
                       <p className="text-xs sm:text-sm text-gray-500">Calculating and thinking...</p>
                     </div>
                   </div>
@@ -404,8 +419,8 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
                 placeholder={isListening ? "Listening..." : "Ask me anything - calculations, fitness advice, tracking..."}
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
-                className="flex-1 min-w-0 text-sm sm:text-base"
+                onKeyPress={handleKeyPress}
+                className="flex-1 min-w-0 text-xs sm:text-sm"
                 disabled={isLoading}
               />
               
@@ -414,25 +429,25 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
                   variant="outline"
                   size="icon"
                   onClick={handleVoiceInput}
-                  className={`flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 ${isListening ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
+                  className={`flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 ${isListening ? 'bg-red-50 border-red-200 text-red-600' : ''}`}
                   disabled={isLoading}
                 >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {isListening ? <MicOff className="w-3 h-3 sm:w-4 sm:h-4" /> : <Mic className="w-3 h-3 sm:w-4 sm:h-4" />}
                 </Button>
               )}
               
               <Button 
                 onClick={sendMessage} 
                 disabled={isLoading || !newMessage.trim()}
-                className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                className="flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                 size="icon"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </div>
             
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs sm:text-sm text-blue-800">
+            <div className="mt-3 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
                 <strong>Try asking:</strong> "Calculate my BMI", "What's 25% of 2400 calories?", "I had eggs for breakfast", "Did 30 minutes of yoga", "Calculate protein needs for 70kg person"
                 {isSupported && <span className="hidden sm:inline"> - or use the mic button to speak!</span>}
               </p>

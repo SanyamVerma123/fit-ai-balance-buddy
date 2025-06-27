@@ -1,3 +1,4 @@
+
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Utensils, Dumbbell, Target } from "lucide-react";
@@ -57,10 +58,10 @@ const Index = () => {
     const foodItem: FoodItem = {
       id: Date.now().toString(),
       name: food.name,
-      calories: food.calories,
-      quantity: food.quantity,
-      unit: food.unit,
-      mealType: food.mealType,
+      calories: food.calories || 0,
+      quantity: food.quantity || 1,
+      unit: food.unit || 'serving',
+      mealType: food.mealType || 'snack',
       timestamp: new Date().toISOString()
     };
 
@@ -79,8 +80,8 @@ const Index = () => {
     const workoutItem: WorkoutItem = {
       id: Date.now().toString(),
       name: workout.name,
-      duration: workout.duration,
-      caloriesBurned: workout.calories,
+      duration: workout.duration || 0,
+      caloriesBurned: workout.calories || 0,
       timestamp: new Date().toISOString()
     };
 
@@ -95,83 +96,93 @@ const Index = () => {
     localStorage.setItem('dailyWorkoutLog', JSON.stringify([...existingLog, workoutItem]));
   };
 
-  const totalCaloriesConsumed = todayData.foodItems.reduce((sum, item) => sum + item.calories, 0);
-  const totalCaloriesBurned = todayData.workoutItems.reduce((sum, item) => sum + item.caloriesBurned, 0);
+  // Fixed calculations to prevent NaN
+  const totalCaloriesConsumed = todayData.foodItems.reduce((sum, item) => {
+    const calories = typeof item.calories === 'number' && !isNaN(item.calories) ? item.calories : 0;
+    return sum + calories;
+  }, 0);
+
+  const totalCaloriesBurned = todayData.workoutItems.reduce((sum, item) => {
+    const calories = typeof item.caloriesBurned === 'number' && !isNaN(item.caloriesBurned) ? item.caloriesBurned : 0;
+    return sum + calories;
+  }, 0);
+
   const netCalories = totalCaloriesConsumed - totalCaloriesBurned;
+  const safeNetCalories = isNaN(netCalories) ? 0 : netCalories;
 
   const goalMessage = userProfile?.goal === 'gain' ? 'Gaining Weight' : 
                      userProfile?.goal === 'loss' ? 'Losing Weight' : 'Maintaining Weight';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-8">
+      <div className="p-4 sm:p-6 max-w-full overflow-x-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 mb-6 sm:mb-8">
           <SidebarTrigger />
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight">
               Welcome to FitTracker AI
             </h1>
-            <p className="text-gray-600">Your AI-powered fitness companion for {goalMessage}</p>
+            <p className="text-sm sm:text-base text-gray-600 truncate">Your AI-powered fitness companion for {goalMessage}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-green-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-700">
-                <Utensils className="w-5 h-5" />
-                Calories Consumed
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-1 sm:gap-2 text-green-700 text-sm sm:text-base">
+                <Utensils className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">Calories In</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{totalCaloriesConsumed}</div>
-              <p className="text-sm text-gray-600">Today's intake</p>
+            <CardContent className="pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-green-600">{totalCaloriesConsumed}</div>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">Today's intake</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-orange-700">
-                <Dumbbell className="w-5 h-5" />
-                Calories Burned
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-1 sm:gap-2 text-orange-700 text-sm sm:text-base">
+                <Dumbbell className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">Calories Out</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{totalCaloriesBurned}</div>
-              <p className="text-sm text-gray-600">From workouts</p>
+            <CardContent className="pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-orange-600">{totalCaloriesBurned}</div>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">From workouts</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-700">
-                <Target className="w-5 h-5" />
-                Net Calories
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-1 sm:gap-2 text-blue-700 text-sm sm:text-base">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">Net Calories</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{netCalories}</div>
-              <p className="text-sm text-gray-600">Consumed - Burned</p>
+            <CardContent className="pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-blue-600">{safeNetCalories}</div>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">Consumed - Burned</p>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-700">
-                <TrendingUp className="w-5 h-5" />
-                Goal Progress
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="flex items-center gap-1 sm:gap-2 text-purple-700 text-sm sm:text-base">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">Goal Progress</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {userProfile?.goal === 'gain' ? '+' : userProfile?.goal === 'loss' ? '-' : '='} {Math.abs(netCalories)}
+            <CardContent className="pt-0">
+              <div className="text-lg sm:text-2xl font-bold text-purple-600">
+                {userProfile?.goal === 'gain' ? '+' : userProfile?.goal === 'loss' ? '-' : '='} {Math.abs(safeNetCalories)}
               </div>
-              <p className="text-sm text-gray-600">Towards goal</p>
+              <p className="text-xs sm:text-sm text-gray-600 truncate">Towards goal</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
           <MealTracker onCaloriesAdd={handleCaloriesAdd} />
         </div>
