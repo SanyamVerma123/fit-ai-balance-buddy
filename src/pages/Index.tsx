@@ -260,7 +260,7 @@ const Index = () => {
           <MealTracker onCaloriesAdd={handleCaloriesAdd} />
           <AiWorkoutTracker onWorkoutAdd={handleWorkoutAdd} />
         </div>
-      </CardContent>
+      </div>
     </div>
   );
 };
