@@ -18,8 +18,8 @@ interface Message {
   timestamp: string;
 }
 
-// Updated API key - make sure this is your valid Groq API key
-const PERMANENT_API_KEY = "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";
+// Updated API key - your valid Groq API key for personal use
+const PERMANENT_API_KEY = "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";
 
 const AiCoach = () => {
   const [newMessage, setNewMessage] = useState('');
