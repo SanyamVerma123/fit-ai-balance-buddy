@@ -2,7 +2,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Utensils, Dumbbell, Target, Droplets } from "lucide-react";
-import { MealTracker } from "@/components/MealTracker";
+import { EnhancedMealTracker } from "@/components/EnhancedMealTracker";
 import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { WaterIntakeTracker } from "@/components/WaterIntakeTracker";
@@ -256,8 +256,8 @@ const Index = () => {
           <WaterIntakeTracker onWaterAdd={handleWaterAdd} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-          <MealTracker onCaloriesAdd={handleCaloriesAdd} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+          <EnhancedMealTracker onCaloriesAdd={handleCaloriesAdd} />
           <AiWorkoutTracker onWorkoutAdd={handleWorkoutAdd} />
         </div>
       </div>
