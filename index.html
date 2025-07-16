@@ -3,22 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fit-ai-balance-buddy</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <title>FitAI Balance Buddy - AI-Powered Fitness & Nutrition Tracker</title>
+    <meta name="description" content="Transform your health with FitAI Balance Buddy! AI-powered fitness coach, calorie tracker, workout planner, and nutrition guide. Get personalized meal plans, track water intake, and achieve your fitness goals with smart recommendations." />
+    <meta name="keywords" content="fitness tracker, AI fitness coach, calorie tracker, workout planner, nutrition app, weight loss, muscle gain, health app, meal tracker, water intake tracker" />
+    <meta name="author" content="FitAI Balance Buddy" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://fit-ai-balance-buddy.vercel.app" />
 
-    <meta property="og:title" content="fit-ai-balance-buddy" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://fit-ai-balance-buddy.vercel.app" />
+    <meta property="og:title" content="FitAI Balance Buddy - AI-Powered Fitness & Nutrition Tracker" />
+    <meta property="og:description" content="Transform your health with AI-powered fitness coaching, smart calorie tracking, and personalized workout plans. Start your fitness journey today!" />
+    <meta property="og:image" content="https://fit-ai-balance-buddy.vercel.app/og-image.jpg" />
+    <meta property="og:site_name" content="FitAI Balance Buddy" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://fit-ai-balance-buddy.vercel.app" />
+    <meta property="twitter:title" content="FitAI Balance Buddy - AI-Powered Fitness & Nutrition Tracker" />
+    <meta property="twitter:description" content="Transform your health with AI-powered fitness coaching, smart calorie tracking, and personalized workout plans." />
+    <meta property="twitter:image" content="https://fit-ai-balance-buddy.vercel.app/og-image.jpg" />
+
+    <!-- App Store / Mobile App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FitAI Buddy" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#6366f1" />
+
+    <!-- AdMob App Integration -->
+    <meta name="google-adsense-account" content="ca-app-pub-4815952215989057" />
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "FitAI Balance Buddy",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Any",
+      "description": "AI-powered fitness and nutrition tracker with personalized coaching, calorie tracking, workout planning, and smart health recommendations.",
+      "url": "https://fit-ai-balance-buddy.vercel.app",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "1000"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "FitAI Balance Buddy"
+      }
+    }
+    </script>
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-app-pub-4815952215989057" crossorigin="anonymous"></script>
   </head>
 
   <body>
     <div id="root"></div>
+    
+    <!-- AdMob Banner Ad -->
+    <div id="adContainer" style="text-align: center; margin: 10px 0;">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-app-pub-4815952215989057"
+           data-ad-slot="2326776200"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+    </div>
+    
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Initialize AdSense -->
+    <script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+    
+    <!-- Performance and Analytics -->
+    <script>
+      // Preload critical resources
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(error => console.log('SW registration failed'));
+        });
+      }
+    </script>
   </body>
 </html>

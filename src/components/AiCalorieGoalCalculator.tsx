@@ -24,7 +24,7 @@ export const AiCalorieGoalCalculator = ({ onGoalCalculated }: AiCalorieGoalCalcu
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
