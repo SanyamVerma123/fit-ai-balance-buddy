@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Droplets, Plus, Minus } from "lucide-react";
+import { Droplets, Plus, Minus, Waves } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import waterBanner from "@/assets/water-banner.jpg";
 
 interface WaterEntry {
   id: string;
@@ -70,32 +71,58 @@ export const WaterIntakeTracker = ({ onWaterAdd }: WaterIntakeTrackerProps) => {
   const progressPercentage = Math.min((totalWater / waterGoal) * 100, 100);
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50 w-full">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-blue-700">
-          <Droplets className="w-5 h-5 flex-shrink-0" />
-          <span className="truncate">Water Intake</span>
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm">
-          Stay hydrated throughout the day
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-4 w-full">
+      {/* Hero Banner */}
+      <div className="relative h-20 sm:h-24 rounded-xl overflow-hidden shadow-elegant">
+        <img 
+          src={waterBanner} 
+          alt="Water hydration banner" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 gradient-dark opacity-60"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white">
+            <h2 className="text-sm sm:text-base font-bold flex items-center gap-2 justify-center">
+              <Waves className="w-4 h-4" />
+              Water Intake
+            </h2>
+            <p className="text-xs opacity-90">Stay hydrated</p>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50 w-full professional-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-blue-700 text-sm">
+            <Droplets className="w-4 h-4 flex-shrink-0" />
+            <span className="truncate">Daily Hydration</span>
+          </CardTitle>
+        </CardHeader>
       <CardContent className="space-y-4">
-        {/* Progress */}
-        <div className="space-y-2">
+        {/* Animated Water Level */}
+        <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">Today's Progress</span>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs gradient-primary text-white">
               {totalWater}ml / {waterGoal}ml
             </Badge>
           </div>
-          <div className="w-full bg-blue-100 rounded-full h-2">
+          
+          {/* Water Glass Animation */}
+          <div className="relative mx-auto w-24 h-32 border-2 border-blue-300 rounded-b-3xl bg-gradient-to-b from-transparent to-blue-50">
             <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercentage}%` }}
-            />
+              className="absolute bottom-0 w-full bg-gradient-to-t from-blue-400 to-cyan-300 rounded-b-3xl transition-all duration-1000 ease-out"
+              style={{ height: `${progressPercentage}%` }}
+            >
+              <div className="absolute top-0 w-full h-2 bg-white/20 animate-pulse"></div>
+              <div className="absolute top-1 w-full h-1 bg-white/40 animate-bounce"></div>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Droplets className={`w-6 h-6 ${progressPercentage > 50 ? 'text-white' : 'text-blue-400'} animate-pulse`} />
+            </div>
           </div>
-          <p className="text-xs text-gray-600 text-center">
+          
+          <p className="text-xs text-gray-600 text-center font-medium">
             {progressPercentage.toFixed(0)}% of daily goal
           </p>
         </div>
@@ -167,5 +194,6 @@ export const WaterIntakeTracker = ({ onWaterAdd }: WaterIntakeTrackerProps) => {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };

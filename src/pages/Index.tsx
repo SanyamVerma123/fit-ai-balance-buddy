@@ -1,12 +1,14 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Utensils, Dumbbell, Target, Droplets } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Utensils, Dumbbell, Target, Droplets, Mic, Settings, Trash2 } from "lucide-react";
 import { EnhancedMealTracker } from "@/components/EnhancedMealTracker";
-import { AiWorkoutTracker } from "@/components/AiWorkoutTracker";
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { WaterIntakeTracker } from "@/components/WaterIntakeTracker";
+import { VoiceInput } from "@/components/VoiceInput";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 
 interface FoodItem {
@@ -35,7 +37,10 @@ interface WaterEntry {
 
 const Index = () => {
   const { userProfile } = useUserProfile();
+  const { toast } = useToast();
   const [calorieGoal, setCalorieGoal] = useState<number>(2000);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [todayData, setTodayData] = useState({
     foodItems: [] as FoodItem[],
     workoutItems: [] as WorkoutItem[],
@@ -144,7 +149,76 @@ const Index = () => {
   };
 
   const handleWaterAdd = (amount: number) => {
-    // Water intake handled by WaterIntakeTracker component
+    const waterEntry: WaterEntry = {
+      id: Date.now().toString(),
+      amount,
+      timestamp: new Date().toISOString()
+    };
+
+    // Update local state
+    setTodayData(prev => ({
+      ...prev,
+      waterEntries: [...prev.waterEntries, waterEntry]
+    }));
+
+    // Save to localStorage
+    const existingLog = JSON.parse(localStorage.getItem('dailyWaterLog') || '[]');
+    const newLog = [...existingLog, waterEntry];
+    localStorage.setItem('dailyWaterLog', JSON.stringify(newLog));
+    
+    // Trigger storage event
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'dailyWaterLog',
+      newValue: JSON.stringify(newLog)
+    }));
+  };
+
+  const handleVoiceFoodDetected = (food: { name: string; calories: number; quantity: number; unit: string }) => {
+    const foodItem: FoodItem = {
+      id: Date.now().toString(),
+      name: food.name,
+      calories: food.calories,
+      quantity: food.quantity,
+      unit: food.unit,
+      mealType: 'snack',
+      timestamp: new Date().toISOString()
+    };
+
+    handleCaloriesAdd(food.calories, foodItem);
+  };
+
+  const handleVoiceWorkoutDetected = (workout: { name: string; duration: number; calories: number }) => {
+    const workoutItem: WorkoutItem = {
+      id: Date.now().toString(),
+      name: workout.name,
+      duration: workout.duration,
+      caloriesBurned: workout.calories,
+      timestamp: new Date().toISOString()
+    };
+
+    handleWorkoutAdd(workoutItem);
+  };
+
+  const clearAllData = () => {
+    localStorage.removeItem('dailyFoodLog');
+    localStorage.removeItem('dailyWorkoutLog');
+    localStorage.removeItem('dailyWaterLog');
+    localStorage.removeItem('userProfile');
+    localStorage.removeItem('dailyMeals');
+    
+    setTodayData({
+      foodItems: [],
+      workoutItems: [],
+      waterEntries: []
+    });
+
+    toast({
+      title: "Data cleared! 🗑️",
+      description: "All your data has been cleared successfully",
+    });
+
+    // Refresh the page to reset everything
+    window.location.reload();
   };
 
   // Fixed calculations to prevent NaN
@@ -251,16 +325,66 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
           <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
           <WaterIntakeTracker onWaterAdd={handleWaterAdd} />
+          
+          {/* Settings Card */}
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 professional-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-gray-700 text-sm">
+                <Settings className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Quick Actions</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 pt-0">
+              <Button
+                onClick={() => setShowVoiceInput(true)}
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white text-xs h-8"
+              >
+                <Mic className="w-3 h-3 mr-1" />
+                Voice Input
+              </Button>
+              <Button
+                onClick={clearAllData}
+                variant="destructive"
+                size="sm"
+                className="w-full text-xs h-8"
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Clear Data
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6">
           <EnhancedMealTracker onCaloriesAdd={handleCaloriesAdd} />
-          <AiWorkoutTracker onWorkoutAdd={handleWorkoutAdd} />
         </div>
       </div>
+
+      {/* Voice Input Floating Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="relative group">
+          <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+          <Button
+            onClick={() => setShowVoiceInput(true)}
+            className="relative h-14 w-14 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 border-0 transform hover:scale-110"
+          >
+            <Mic className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Voice Input Modal */}
+      {showVoiceInput && (
+        <VoiceInput
+          onClose={() => setShowVoiceInput(false)}
+          onFoodDetected={handleVoiceFoodDetected}
+          onWaterDetected={handleWaterAdd}
+          onWorkoutDetected={handleVoiceWorkoutDetected}
+        />
+      )}
     </div>
   );
 };

@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, Brain } from "lucide-react";
+import { Target, Brain, Zap } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
+import goalBanner from "@/assets/goal-banner.jpg";
 
 interface AiCalorieGoalCalculatorProps {
   onGoalCalculated: (goal: number) => void;
@@ -95,57 +96,76 @@ export const AiCalorieGoalCalculator = ({ onGoalCalculated }: AiCalorieGoalCalcu
   }, [userProfile]);
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-purple-600" />
-          AI Calorie Goal
-        </CardTitle>
-        <CardDescription>
-          Personalized daily calorie target calculated by AI
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {calculatedGoal ? (
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600 mb-2">
-              {calculatedGoal} kcal
+    <div className="space-y-3 w-full">
+      {/* Compact Banner */}
+      <div className="relative h-16 rounded-lg overflow-hidden shadow-glow">
+        <img 
+          src={goalBanner} 
+          alt="AI calorie goal" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 gradient-dark opacity-70"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white">
+            <h2 className="text-xs font-bold flex items-center gap-1 justify-center">
+              <Zap className="w-3 h-3" />
+              AI Goal
+            </h2>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50 professional-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Brain className="w-4 h-4 text-purple-600" />
+            Daily Target
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 pt-0">
+          {calculatedGoal ? (
+            <div className="text-center">
+              <div className="text-xl font-bold text-purple-600 mb-1">
+                {calculatedGoal} kcal
+              </div>
+              <p className="text-xs text-gray-600 mb-2">
+                For {userProfile?.goal} weight
+              </p>
+              <Button 
+                onClick={calculateCalorieGoalWithAI}
+                disabled={isCalculating}
+                variant="outline"
+                size="sm"
+                className="text-xs h-8"
+              >
+                <Target className="w-3 h-3 mr-1" />
+                Recalculate
+              </Button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Daily calorie goal for {userProfile?.goal} weight
-            </p>
-            <Button 
-              onClick={calculateCalorieGoalWithAI}
-              disabled={isCalculating}
-              variant="outline"
-              size="sm"
-            >
-              <Target className="w-4 h-4 mr-2" />
-              Recalculate
-            </Button>
-          </div>
-        ) : (
-          <div className="text-center">
-            <Button 
-              onClick={calculateCalorieGoalWithAI}
-              disabled={isCalculating}
-              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
-            >
-              {isCalculating ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                  Calculating...
-                </>
-              ) : (
-                <>
-                  <Brain className="w-4 h-4 mr-2" />
-                  Calculate AI Goal
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="text-center">
+              <Button 
+                onClick={calculateCalorieGoalWithAI}
+                disabled={isCalculating}
+                size="sm"
+                className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-xs h-8"
+              >
+                {isCalculating ? (
+                  <>
+                    <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-1" />
+                    Calculating...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-3 h-3 mr-1" />
+                    Calculate
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

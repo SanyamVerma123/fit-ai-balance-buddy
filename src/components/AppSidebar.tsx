@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles, Bot, User, MessageCircle } from "lucide-react";
+import { Home, TrendingUp, TrendingDown, Activity, BarChart3, Dumbbell, Menu, Sparkles, Bot, User, MessageCircle, HelpCircle, Info, Mail } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -80,6 +80,21 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
         title: "Profile",
         url: "/profile",
         icon: User,
+      },
+      {
+        title: "Help",
+        url: "/help",
+        icon: HelpCircle,
+      },
+      {
+        title: "About",
+        url: "/about",
+        icon: Info,
+      },
+      {
+        title: "Contact",
+        url: "/contact",
+        icon: Mail,
       }
     );
 
