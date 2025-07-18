@@ -10,6 +10,7 @@ import { VoiceInput } from "@/components/VoiceInput";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import heroBanner from "@/assets/hero-banner.jpg";
 
 interface FoodItem {
   id: string;
@@ -246,13 +247,24 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 w-full overflow-x-hidden">
       <div className="p-3 sm:p-4 lg:p-6 max-w-full">
-        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
-          <SidebarTrigger />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight">
-              Welcome to FitTracker AI
-            </h1>
-            <p className="text-xs sm:text-sm lg:text-base text-gray-600 truncate">Your AI-powered fitness companion for {goalMessage}</p>
+        {/* Hero Section with Background Image */}
+        <div 
+          className="relative mb-4 sm:mb-6 lg:mb-8 rounded-xl overflow-hidden shadow-xl"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url(${heroBanner})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            minHeight: '200px'
+          }}
+        >
+          <div className="flex items-center gap-2 sm:gap-4 p-4 sm:p-6">
+            <SidebarTrigger className="text-white" />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white leading-tight drop-shadow-lg">
+                Welcome to FitTracker AI
+              </h1>
+              <p className="text-xs sm:text-sm lg:text-base text-gray-200 truncate drop-shadow-md">Your AI-powered fitness companion for {goalMessage}</p>
+            </div>
           </div>
         </div>
 
@@ -326,41 +338,51 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-          <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
-          <WaterIntakeTracker onWaterAdd={handleWaterAdd} />
+          {/* Enhanced Meal Tracker - Main Component */}
+          <div className="lg:col-span-2">
+            <EnhancedMealTracker onCaloriesAdd={handleCaloriesAdd} />
+          </div>
           
-          {/* Settings Card */}
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 professional-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-gray-700 text-sm">
-                <Settings className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Quick Actions</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              <Button
-                onClick={() => setShowVoiceInput(true)}
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white text-xs h-8"
-              >
-                <Mic className="w-3 h-3 mr-1" />
-                Voice Input
-              </Button>
-              <Button
-                onClick={clearAllData}
-                variant="destructive"
-                size="sm"
-                className="w-full text-xs h-8"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Clear Data
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Right sidebar with smaller components */}
+          <div className="space-y-3 sm:space-y-4">
+            {/* AI Calorie Goal - Smaller Version */}
+            <div className="scale-90 origin-top">
+              <AiCalorieGoalCalculator onGoalCalculated={handleGoalCalculated} />
+            </div>
+            
+            {/* Water Intake Tracker */}
+            <WaterIntakeTracker onWaterAdd={handleWaterAdd} />
+            
+            {/* Settings Card */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 professional-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-gray-700 text-sm">
+                  <Settings className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">Quick Actions</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-0">
+                <Button
+                  onClick={() => setShowVoiceInput(true)}
+                  className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white text-xs h-8"
+                >
+                  <Mic className="w-3 h-3 mr-1" />
+                  Voice Input
+                </Button>
+                <Button
+                  onClick={clearAllData}
+                  variant="destructive"
+                  size="sm"
+                  className="w-full text-xs h-8"
+                >
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Clear Data
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6">
-          <EnhancedMealTracker onCaloriesAdd={handleCaloriesAdd} />
-        </div>
       </div>
 
       {/* Voice Input Floating Button */}

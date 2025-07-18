@@ -279,49 +279,101 @@ export default function Progress() {
               </Card>
             </div>
 
-            {/* Selected Date Details */}
+            {/* Enhanced Selected Date Details */}
             {selectedDateData && (
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle>Data for {selectedDate.toDateString()}</CardTitle>
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50 to-blue-50">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    Detailed Analytics for {selectedDate.toDateString()}
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Complete nutritional breakdown and activity summary
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
+                  {/* Nutrition Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600">
+                    <div className="text-center p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-md border border-blue-200">
+                      <div className="text-2xl font-bold text-blue-700 mb-1">
                         {selectedDateData.totalCalories}
                       </div>
-                      <div className="text-sm text-gray-600">Calories</div>
+                      <div className="text-sm font-medium text-blue-600">Total Calories</div>
+                      <div className="text-xs text-blue-500 mt-1">Energy Intake</div>
                     </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-lg font-bold text-green-600">
+                    <div className="text-center p-4 bg-gradient-to-br from-green-100 to-green-200 rounded-xl shadow-md border border-green-200">
+                      <div className="text-2xl font-bold text-green-700 mb-1">
                         {selectedDateData.totalProtein}g
                       </div>
-                      <div className="text-sm text-gray-600">Protein</div>
+                      <div className="text-sm font-medium text-green-600">Protein</div>
+                      <div className="text-xs text-green-500 mt-1">Muscle Building</div>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 rounded-lg">
-                      <div className="text-lg font-bold text-orange-600">
+                    <div className="text-center p-4 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl shadow-md border border-orange-200">
+                      <div className="text-2xl font-bold text-orange-700 mb-1">
                         {selectedDateData.totalCarbs}g
                       </div>
-                      <div className="text-sm text-gray-600">Carbs</div>
+                      <div className="text-sm font-medium text-orange-600">Carbohydrates</div>
+                      <div className="text-xs text-orange-500 mt-1">Quick Energy</div>
                     </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-lg font-bold text-purple-600">
+                    <div className="text-center p-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl shadow-md border border-purple-200">
+                      <div className="text-2xl font-bold text-purple-700 mb-1">
                         {selectedDateData.caloriesBurned}
                       </div>
-                      <div className="text-sm text-gray-600">Burned</div>
+                      <div className="text-sm font-medium text-purple-600">Calories Burned</div>
+                      <div className="text-xs text-purple-500 mt-1">Through Exercise</div>
                     </div>
                   </div>
                   
-                  <div className="mt-4 flex justify-between items-center">
-                    <span className="text-sm text-gray-600">
-                      Exercise: {selectedDateData.exerciseType}
-                    </span>
+                  {/* Additional Metrics */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-cyan-700">Exercise Type</span>
+                        <span className="text-lg font-bold text-cyan-600">{selectedDateData.exerciseType}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-pink-700">Net Calories</span>
+                        <span className="text-lg font-bold text-pink-600">
+                          {selectedDateData.totalCalories - selectedDateData.caloriesBurned}
+                        </span>
+                      </div>
+                    </div>
+                    
                     {selectedDateData.weight && (
-                      <div className="text-lg font-medium">
-                        Weight: {selectedDateData.weight} kg
+                      <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl border border-emerald-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-emerald-700">Weight Recorded</span>
+                          <span className="text-lg font-bold text-emerald-600">{selectedDateData.weight} kg</span>
+                        </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* Nutritional Balance */}
+                  <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                    <h4 className="font-semibold text-indigo-700 mb-3">Nutritional Balance</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Protein %</span>
+                        <span className="font-medium text-indigo-600">
+                          {selectedDateData.totalCalories > 0 ? Math.round((selectedDateData.totalProtein * 4 / selectedDateData.totalCalories) * 100) : 0}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Carbs %</span>
+                        <span className="font-medium text-indigo-600">
+                          {selectedDateData.totalCalories > 0 ? Math.round((selectedDateData.totalCarbs * 4 / selectedDateData.totalCalories) * 100) : 0}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Calorie Deficit/Surplus</span>
+                        <span className={`font-medium ${selectedDateData.totalCalories - selectedDateData.caloriesBurned > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                          {selectedDateData.totalCalories - selectedDateData.caloriesBurned > 0 ? '+' : ''}{selectedDateData.totalCalories - selectedDateData.caloriesBurned}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

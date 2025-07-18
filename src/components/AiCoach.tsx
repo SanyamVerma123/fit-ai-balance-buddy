@@ -349,7 +349,7 @@ Be encouraging, provide clear helpful responses with accurate calculations, and 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama3-70b-8192',
+          model: 'meta-llama/llama-3.1-70b-versatile',
           messages: [
             { role: 'system', content: context },
             ...recentHistory,
