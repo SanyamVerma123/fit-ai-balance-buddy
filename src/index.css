@@ -36,11 +36,17 @@
 
     --radius: 0.75rem;
 
-    /* Enhanced gradients for professional look */
+/* Enhanced gradients for professional look */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(142 76% 46%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(283 76% 64%));
     --gradient-food: linear-gradient(135deg, hsl(24 95% 53%), hsl(45 93% 47%));
     --gradient-dark: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(240 5.9% 10%));
+    
+    /* Different food category colors */
+    --food-breakfast: hsl(45 95% 58%);
+    --food-lunch: hsl(120 85% 48%);
+    --food-snacks: hsl(280 75% 58%);
+    --food-dinner: hsl(200 85% 48%);
     
     /* Professional shadows */
     --shadow-glow: 0 4px 20px hsl(var(--primary) / 0.3);

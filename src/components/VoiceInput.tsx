@@ -19,42 +19,65 @@ export const VoiceInput = ({ onClose, onFoodDetected, onWaterDetected, onWorkout
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast({
-        title: "Speech recognition not supported",
-        description: "Your browser doesn't support speech recognition",
-        variant: "destructive",
-      });
-      return;
-    }
+    const initSpeechRecognition = async () => {
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        toast({
+          title: "Speech recognition not supported",
+          description: "Your browser doesn't support speech recognition. Try using it as a website.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
+      // Check if we're in a mobile app (Capacitor) context
+      const isCapacitorApp = !!(window as any).Capacitor;
+      if (isCapacitorApp) {
+        // Request microphone permissions for mobile app
+        if ('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices) {
+          try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (error) {
+            toast({
+              title: "Microphone permission denied",
+              description: "Please enable microphone access in app settings",
+              variant: "destructive",
+            });
+            return;
+          }
         }
       }
-      if (finalTranscript) {
-        setTranscript(finalTranscript);
-        processVoiceInput(finalTranscript);
-      }
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          }
+        }
+        if (finalTranscript) {
+          setTranscript(finalTranscript);
+          processVoiceInput(finalTranscript);
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+
+      // Start listening immediately
+      startListening();
     };
 
-    recognition.onend = () => {
-      setIsListening(false);
-    };
+    initSpeechRecognition();
 
-    recognitionRef.current = recognition;
-
-    // Start listening immediately
-    startListening();
 
     return () => {
       if (recognitionRef.current) {
@@ -87,7 +110,7 @@ export const VoiceInput = ({ onClose, onFoodDetected, onWaterDetected, onWorkout
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',

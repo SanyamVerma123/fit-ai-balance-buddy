@@ -254,16 +254,16 @@ const Index = () => {
             backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url(${heroBanner})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            minHeight: '200px'
+            minHeight: '120px'
           }}
         >
-          <div className="flex items-center gap-2 sm:gap-4 p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4">
             <SidebarTrigger className="text-white" />
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white leading-tight drop-shadow-lg">
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white leading-tight drop-shadow-lg">
                 Welcome to FitTracker AI
               </h1>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-200 truncate drop-shadow-md">Your AI-powered fitness companion for {goalMessage}</p>
+              <p className="text-xs sm:text-sm text-gray-200 truncate drop-shadow-md">Your AI-powered fitness companion for {goalMessage}</p>
             </div>
           </div>
         </div>
@@ -358,17 +358,10 @@ const Index = () => {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-gray-700 text-sm">
                   <Settings className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Quick Actions</span>
+                  <span className="truncate">Settings</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 pt-0">
-                <Button
-                  onClick={() => setShowVoiceInput(true)}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white text-xs h-8"
-                >
-                  <Mic className="w-3 h-3 mr-1" />
-                  Voice Input
-                </Button>
                 <Button
                   onClick={clearAllData}
                   variant="destructive"
@@ -385,15 +378,18 @@ const Index = () => {
 
       </div>
 
-      {/* Voice Input Floating Button */}
-      <div className="fixed bottom-6 right-6 z-40">
+      {/* Mobile safe area padding */}
+      <div className="h-20 mobile-safe"></div>
+
+      {/* Voice Input Floating Button - Center Bottom */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
           <Button
             onClick={() => setShowVoiceInput(true)}
-            className="relative h-14 w-14 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 border-0 transform hover:scale-110"
+            className="relative h-16 w-16 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 border-0 transform hover:scale-110"
           >
-            <Mic className="h-6 w-6" />
+            <Mic className="h-7 w-7" />
           </Button>
         </div>
       </div>
