@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Utensils, Camera, Brain, Clock, Send, X, Check, Sparkles, ChefHat } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { WeeklyChart, NutritionPieChart } from "@/components/WeeklyChart";
 import breakfastImg from "@/assets/breakfast-foods.jpg";
 import lunchImg from "@/assets/lunch-foods.jpg";
 import dinnerImg from "@/assets/dinner-foods.jpg";
@@ -347,9 +348,30 @@ export const EnhancedMealTracker = ({ onCaloriesAdd }: EnhancedMealTrackerProps)
     const result = await analyzeImageWithAI(uploadedImage);
     setFoodName(result.name);
     
+    // Auto-save to current meal time
+    const foodItem: FoodItem = {
+      name: result.name,
+      quantity: 1,
+      unit: 'serving',
+      calories: result.calories,
+      protein: result.protein || 8,
+      carbs: result.carbs || 20,
+      fat: result.fat || 5,
+      mealType: selectedMeal,
+      date: today,
+      time: new Date().toLocaleTimeString()
+    };
+
+    setDailyMeals(prev => ({
+      ...prev,
+      [today]: [...(prev[today] || []), foodItem]
+    }));
+
+    onCaloriesAdd(result.calories, foodItem);
+    
     toast({
-      title: "Image analyzed! 📸",
-      description: `Detected: ${result.name} (${result.calories} kcal)`,
+      title: "Food auto-saved! 📸✅",
+      description: `${result.name} added to ${selectedMeal} (${result.calories} kcal)`,
     });
 
     // Clean up
@@ -487,6 +509,15 @@ export const EnhancedMealTracker = ({ onCaloriesAdd }: EnhancedMealTrackerProps)
                 <span className="truncate">{meal.label}</span>
               </Button>
             ))}
+          </div>
+
+          {/* Track Your Meals Charts Section */}
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-3 text-primary">Track Your Meals</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <WeeklyChart />
+              <NutritionPieChart />
+            </div>
           </div>
 
           {/* Current Meal Summary */}

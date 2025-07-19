@@ -44,7 +44,7 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email Support",
-      value: "support@fittracker.ai",
+      value: "onlyforwork658@gmail.com",
       description: "Get help within 24 hours"
     },
     {

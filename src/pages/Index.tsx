@@ -261,7 +261,7 @@ const Index = () => {
             <SidebarTrigger className="text-white" />
             <div className="min-w-0 flex-1">
               <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white leading-tight drop-shadow-lg">
-                Welcome to FitTracker AI
+                Welcome to FitAI Calories Tracker
               </h1>
               <p className="text-xs sm:text-sm text-gray-200 truncate drop-shadow-md">Your AI-powered fitness companion for {goalMessage}</p>
             </div>

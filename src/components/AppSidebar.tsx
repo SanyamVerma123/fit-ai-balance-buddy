@@ -47,8 +47,8 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
 
     if (userGoal === 'gain') {
       baseItems.splice(2, 0, {
-        title: "Weight Gain",
-        url: "/weight-gain",
+        title: "Record Meal",
+        url: "/record-meal",
         icon: TrendingUp,
       });
     } else if (userGoal === 'loss') {
@@ -109,7 +109,7 @@ export function AppSidebar({ userGoal }: AppSidebarProps) {
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            FitTracker AI
+            FitAI Calories Tracker
           </span>
         </div>
       </SidebarHeader>

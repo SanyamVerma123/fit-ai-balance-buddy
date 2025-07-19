@@ -53,17 +53,36 @@ export const VoiceInput = ({ onClose, onFoodDetected, onWaterDetected, onWorkout
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
+      let fullTranscript = '';
+      
       recognition.onresult = (event) => {
+        let interimTranscript = '';
         let finalTranscript = '';
+        
         for (let i = event.resultIndex; i < event.results.length; i++) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
           }
         }
+        
+        // Show interim results while speaking
+        setTranscript(fullTranscript + finalTranscript + interimTranscript);
+        
+        // Only process when final results are available
         if (finalTranscript) {
-          setTranscript(finalTranscript);
-          processVoiceInput(finalTranscript);
+          fullTranscript += finalTranscript;
         }
+      };
+
+      recognition.onspeechend = () => {
+        // Process the complete transcript when speech ends
+        if (fullTranscript.trim()) {
+          processVoiceInput(fullTranscript.trim());
+          fullTranscript = '';
+        }
+        recognition.stop();
       };
 
       recognition.onend = () => {

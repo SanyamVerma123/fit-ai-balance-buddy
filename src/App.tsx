@@ -9,7 +9,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import Index from "./pages/Index";
-import WeightGain from "./pages/WeightGain";
+import RecordMeal from "./pages/RecordMeal";
 import WeightLoss from "./pages/WeightLoss";
 import WeightMaintain from "./pages/WeightMaintain";
 import Workouts from "./pages/Workouts";
@@ -37,7 +37,7 @@ const AppContent = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/weight-gain" element={<WeightGain />} />
+            <Route path="/record-meal" element={<RecordMeal />} />
             <Route path="/weight-loss" element={<WeightLoss />} />
             <Route path="/weight-maintain" element={<WeightMaintain />} />
             <Route path="/workouts" element={<Workouts />} />
