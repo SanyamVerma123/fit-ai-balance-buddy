@@ -1,4 +1,4 @@
 
-import AiCoach from "@/components/AiCoach";
+import EnhancedAiCoach from "@/components/EnhancedAiCoach";
 
-export default AiCoach;
+export default EnhancedAiCoach;

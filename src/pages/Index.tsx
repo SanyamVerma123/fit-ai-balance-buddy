@@ -3,7 +3,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Utensils, Dumbbell, Target, Droplets, Mic, Settings, Trash2 } from "lucide-react";
-import { EnhancedMealTracker } from "@/components/EnhancedMealTracker";
+import { SimpleMealTracker as EnhancedMealTracker } from "@/components/SimpleMealTracker";
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { WaterIntakeTracker } from "@/components/WaterIntakeTracker";
 import { VoiceInput } from "@/components/VoiceInput";
@@ -338,7 +338,7 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
-          {/* Enhanced Meal Tracker - Main Component */}
+          {/* Enhanced Meal Tracker - View Only */}
           <div className="lg:col-span-2">
             <EnhancedMealTracker onCaloriesAdd={handleCaloriesAdd} />
           </div>

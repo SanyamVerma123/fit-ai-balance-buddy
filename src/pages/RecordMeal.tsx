@@ -47,6 +47,8 @@ const RecordMeal = () => {
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("piece");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { toast } = useToast();
 
   const handleMealSelection = (mealType: string) => {
@@ -64,26 +66,53 @@ const RecordMeal = () => {
     }
 
     // Calculate calories using AI
-    const calories = await calculateCalories(foodName, quantity, unit);
+    const nutrition = await calculateNutrition(foodName, quantity, unit);
     
     const newRecord: FoodRecord = {
       id: Date.now().toString(),
       name: foodName,
       quantity: Number(quantity),
       unit,
-      calories,
+      calories: nutrition.calories,
       mealType: selectedMeal,
       date: new Date().toDateString(),
       time: new Date().toLocaleTimeString()
     };
 
-    // Save to localStorage
-    const existingRecords = JSON.parse(localStorage.getItem('mealRecords') || '[]');
-    localStorage.setItem('mealRecords', JSON.stringify([...existingRecords, newRecord]));
+    // Save to localStorage for dailyFoodLog (used by charts and dashboard)
+    const existingLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
+    const foodLogEntry = {
+      ...newRecord,
+      timestamp: new Date().toISOString(),
+      protein: nutrition.protein,
+      carbs: nutrition.carbs,
+      fat: nutrition.fat
+    };
+    localStorage.setItem('dailyFoodLog', JSON.stringify([...existingLog, foodLogEntry]));
+
+    // Save to dailyMeals for meal tracker
+    const existingMeals = JSON.parse(localStorage.getItem('dailyMeals') || '{}');
+    const today = new Date().toISOString().split('T')[0];
+    const updatedMeals = {
+      ...existingMeals,
+      [today]: [...(existingMeals[today] || []), {
+        ...newRecord,
+        protein: nutrition.protein,
+        carbs: nutrition.carbs,
+        fat: nutrition.fat
+      }]
+    };
+    localStorage.setItem('dailyMeals', JSON.stringify(updatedMeals));
+
+    // Trigger storage events for real-time updates
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'dailyFoodLog',
+      newValue: JSON.stringify([...existingLog, foodLogEntry])
+    }));
 
     toast({
       title: "Meal recorded! 🍽️",
-      description: `Added ${foodName} to ${selectedMeal}`,
+      description: `Added ${foodName} to ${selectedMeal} (${nutrition.calories} kcal)`,
     });
 
     // Reset form
@@ -91,7 +120,7 @@ const RecordMeal = () => {
     setQuantity("1");
   };
 
-  const calculateCalories = async (food: string, qty: string, unitType: string): Promise<number> => {
+  const calculateNutrition = async (food: string, qty: string, unitType: string): Promise<{calories: number, protein: number, carbs: number, fat: number}> => {
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -104,27 +133,123 @@ const RecordMeal = () => {
           messages: [
             {
               role: 'system',
-              content: 'Calculate calories for food items. Return only the number.'
+              content: 'Analyze food and return detailed nutrition. Return ONLY JSON: {"calories": number, "protein": number, "carbs": number, "fat": number}'
             },
             {
               role: 'user',
-              content: `Calculate calories for: ${food} - ${qty} ${unitType}`
+              content: `Calculate nutrition for: ${food} - ${qty} ${unitType}`
             }
           ],
           temperature: 0.1,
-          max_tokens: 50
+          max_tokens: 150
         }),
       });
 
       const data = await response.json();
       const content = data.choices[0].message.content;
-      const calorieMatch = content.match(/(\d+)/);
-      return calorieMatch ? parseInt(calorieMatch[1]) : 100;
+      
+      try {
+        const parsed = JSON.parse(content);
+        return {
+          calories: parsed.calories || 100,
+          protein: parsed.protein || 5,
+          carbs: parsed.carbs || 15,
+          fat: parsed.fat || 3
+        };
+      } catch {
+        return { calories: 100, protein: 5, carbs: 15, fat: 3 };
+      }
     } catch {
-      return 100;
+      return { calories: 100, protein: 5, carbs: 15, fat: 3 };
     }
   };
 
+  const generateAISuggestion = async () => {
+    // AI suggestion logic here
+    toast({
+      title: "AI Suggestions coming soon!",
+      description: "This feature will suggest meals based on your preferences",
+    });
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadedImage(file);
+    setIsAnalyzing(true);
+
+    try {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer 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',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          messages: [
+            {
+              role: 'system',
+              content: 'Analyze food images and return JSON: {"name": "food_name", "quantity": number, "unit": "unit_type", "calories": number}'
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Identify this food and estimate quantity, unit, and calories.'
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: base64 }
+                }
+              ]
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 150
+        }),
+      });
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      try {
+        const parsed = JSON.parse(content);
+        setFoodName(parsed.name || 'Food from image');
+        setQuantity(parsed.quantity?.toString() || '1');
+        setUnit(parsed.unit || 'piece');
+        
+        toast({
+          title: "Photo analyzed! 📸",
+          description: `Detected: ${parsed.name || 'Food from image'}`,
+        });
+      } catch {
+        setFoodName('Food from image');
+        toast({
+          title: "Photo uploaded! 📸",
+          description: "Please enter food details manually",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Analysis failed",
+        description: "Please enter food details manually",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+      setUploadedImage(null);
+    }
+  };
+  
   if (!selectedMeal) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 w-full overflow-x-hidden">
@@ -242,22 +367,33 @@ const RecordMeal = () => {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={addFoodRecord} className="flex-1">
+              <Button onClick={addFoodRecord} className="flex-1 gradient-primary text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Food
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => generateAISuggestion()}
+                className="hover:shadow-glow transition-all"
+              >
                 <Brain className="w-4 h-4 mr-2" />
                 AI Suggest
               </Button>
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => document.getElementById('photo-input')?.click()}
+                className="hover:shadow-glow transition-all"
+              >
                 <Camera className="w-4 h-4 mr-2" />
                 Photo
               </Button>
-              <Button variant="outline">
-                <Mic className="w-4 h-4 mr-2" />
-                Voice
-              </Button>
+              <input
+                id="photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
             </div>
           </CardContent>
         </Card>
