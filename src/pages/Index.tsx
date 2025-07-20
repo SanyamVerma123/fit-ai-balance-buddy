@@ -7,6 +7,7 @@ import { SimpleMealTracker as EnhancedMealTracker } from "@/components/SimpleMea
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { WaterIntakeTracker } from "@/components/WaterIntakeTracker";
 import { VoiceInput } from "@/components/VoiceInput";
+import { ConversationVoiceInput } from "@/components/ConversationVoiceInput";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -41,6 +42,7 @@ const Index = () => {
   const { toast } = useToast();
   const [calorieGoal, setCalorieGoal] = useState<number>(2000);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [showConversationVoice, setShowConversationVoice] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [todayData, setTodayData] = useState({
     foodItems: [] as FoodItem[],
@@ -386,7 +388,7 @@ const Index = () => {
         <div className="relative group">
           <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
           <Button
-            onClick={() => setShowVoiceInput(true)}
+            onClick={() => setShowConversationVoice(true)}
             className="relative h-16 w-16 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 hover:from-purple-600 hover:via-blue-600 hover:to-cyan-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 border-0 transform hover:scale-110"
           >
             <Mic className="h-7 w-7" />
@@ -401,6 +403,19 @@ const Index = () => {
           onFoodDetected={handleVoiceFoodDetected}
           onWaterDetected={handleWaterAdd}
           onWorkoutDetected={handleVoiceWorkoutDetected}
+        />
+      )}
+
+      {/* Conversation Voice Input Modal */}
+      {showConversationVoice && (
+        <ConversationVoiceInput
+          onClose={() => setShowConversationVoice(false)}
+          onDataSaved={(data) => {
+            // Handle saved conversation data
+            data.foods?.forEach((food: any) => handleVoiceFoodDetected(food));
+            data.workouts?.forEach((workout: any) => handleVoiceWorkoutDetected(workout));
+            data.water?.forEach((water: any) => handleWaterAdd(water.amount));
+          }}
         />
       )}
     </div>

@@ -67,13 +67,13 @@ export const VoiceInput = ({ onClose, onFoodDetected, onWaterDetected, onWorkout
           }
         }
         
-        // Show interim results while speaking
-        setTranscript(fullTranscript + finalTranscript + interimTranscript);
-        
-        // Only process when final results are available
-        if (finalTranscript) {
+        // Only accumulate final results to prevent duplication
+        if (finalTranscript.trim() && !fullTranscript.includes(finalTranscript.trim())) {
           fullTranscript += finalTranscript;
         }
+        
+        // Show current speaking progress
+        setTranscript(fullTranscript + interimTranscript);
       };
 
       recognition.onspeechend = () => {

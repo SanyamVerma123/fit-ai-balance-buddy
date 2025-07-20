@@ -69,12 +69,13 @@ const AiCoach = () => {
           }
         }
         
-        if (finalTranscript) {
+        // Prevent duplication by checking if text already exists
+        if (finalTranscript.trim() && !tempTranscript.includes(finalTranscript.trim())) {
           tempTranscript += finalTranscript;
           setFullTranscript(tempTranscript);
         }
         
-        // Show live transcript including interim results
+        // Show live transcript
         setNewMessage(tempTranscript + interimTranscript);
       };
 
@@ -373,7 +374,7 @@ Current conversation context: The user can speak to you using voice input and yo
         </div>
 
         {/* Chat Container */}
-        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-140px)]">
+        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-120px)]">
           <CardHeader className="px-3 sm:px-4 pb-2 sm:pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -455,35 +456,37 @@ Current conversation context: The user can speak to you using voice input and yo
               </Alert>
             )}
 
-            {/* Input */}
-            <div className="flex gap-2 pt-2 border-t">
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder={isListening ? "Speaking..." : "Type your message or use voice input..."}
-                className="flex-1 min-h-[40px] max-h-24 text-sm resize-none"
-                disabled={isLoading || isListening}
-              />
-              <div className="flex flex-col gap-1">
-                <Button
-                  onClick={sendMessage}
-                  disabled={!newMessage.trim() || isLoading || isListening}
-                  size="sm"
-                  className="h-10 w-10 p-0 gradient-primary text-white"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-                {speechRecognition && (
+            {/* Input Area - Fixed Position */}
+            <div className="sticky bottom-0 bg-white dark:bg-card border-t pt-3 -mx-4 px-4 -mb-4 pb-4">
+              <div className="flex gap-2">
+                <Textarea
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder={isListening ? "Speaking..." : "Type your message or use voice input..."}
+                  className="flex-1 min-h-[60px] max-h-24 text-sm resize-none border-2 focus:border-purple-400"
+                  disabled={isLoading || isListening}
+                />
+                <div className="flex flex-col gap-1">
                   <Button
-                    onClick={handleVoiceInput}
-                    variant={isListening ? "destructive" : "outline"}
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || isLoading || isListening}
                     size="sm"
-                    className="h-10 w-10 p-0"
+                    className="h-12 w-12 p-0 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
                   >
-                    {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    <Send className="w-4 h-4" />
                   </Button>
-                )}
+                  {speechRecognition && (
+                    <Button
+                      onClick={handleVoiceInput}
+                      variant={isListening ? "destructive" : "outline"}
+                      size="sm"
+                      className="h-12 w-12 p-0"
+                    >
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>

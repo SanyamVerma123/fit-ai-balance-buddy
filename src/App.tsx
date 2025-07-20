@@ -4,6 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Login } from "@/pages/Login";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
@@ -25,6 +27,22 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { userProfile, isOnboarded, completeOnboarding } = useUserProfile();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Login onAuthSuccess={() => window.location.reload()} />;
+  }
 
   if (!isOnboarded) {
     return <OnboardingFlow onComplete={completeOnboarding} />;
