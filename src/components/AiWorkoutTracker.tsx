@@ -74,7 +74,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
           messages: [
             {
               role: 'system',
@@ -145,7 +145,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
           messages: [
             {
               role: 'system',
@@ -275,10 +275,10 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
   };
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-orange-50 w-full">
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-purple-50 w-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-orange-600 flex-shrink-0" />
+          <Dumbbell className="w-5 h-5 text-purple-600 flex-shrink-0" />
           <span className="truncate">AI Workout Tracker</span>
           {userProfile?.workoutLocation && (
             <Badge variant="secondary" className="ml-2 hidden sm:flex">
@@ -306,7 +306,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
                 onClick={() => getAIWorkoutSuggestions(type.value)}
                 disabled={isGettingSuggestions}
                 variant="outline"
-                className="bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 text-xs sm:text-sm p-2 h-auto"
+                className="bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 text-xs sm:text-sm p-2 h-auto"
               >
                 {isGettingSuggestions ? (
                   <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full mr-2" />
@@ -323,13 +323,13 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
             <div className="space-y-2 max-h-64 overflow-y-auto border-t pt-3">
               <h5 className="font-medium text-gray-800 text-sm sm:text-base">AI Exercise Suggestions:</h5>
               {aiSuggestions.map((suggestion, index) => (
-                <div key={index} className="p-2 sm:p-3 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
+                <div key={index} className="p-2 sm:p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <h6 className="font-medium text-orange-700 text-xs sm:text-sm truncate mr-2">{suggestion.name}</h6>
+                    <h6 className="font-medium text-purple-700 text-xs sm:text-sm truncate mr-2">{suggestion.name}</h6>
                     <Button
                       size="sm"
                       onClick={() => addSuggestedWorkout(suggestion)}
-                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-2 py-1 flex-shrink-0"
+                      className="bg-purple-500 hover:bg-purple-600 text-white text-xs px-2 py-1 flex-shrink-0"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Add
@@ -429,7 +429,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
             <Button 
               onClick={handleAddWorkout}
               disabled={isProcessing || !workoutName || !duration}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-xs sm:text-sm"
+              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-xs sm:text-sm"
             >
               {isProcessing ? (
                 <>

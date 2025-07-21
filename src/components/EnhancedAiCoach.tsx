@@ -254,7 +254,7 @@ Current conversation context: The user can speak to you using voice input and yo
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
+          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
           messages: [
             { role: 'system', content: context },
             { role: 'user', content: userMessage }
@@ -401,9 +401,9 @@ Current conversation context: The user can speak to you using voice input and yo
             </div>
           </CardHeader>
 
-          <CardContent className="px-4 pb-4 h-full flex flex-col">
+          <CardContent className="px-4 h-full flex flex-col relative">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
+            <div className="flex-1 overflow-y-auto space-y-3 pb-20 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -417,7 +417,7 @@ Current conversation context: The user can speak to you using voice input and yo
                   <div
                     className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
                       message.sender === 'user'
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                     }`}
                   >
@@ -452,50 +452,57 @@ Current conversation context: The user can speak to you using voice input and yo
 
             {/* Voice Status */}
             {isListening && (
-              <Alert className="mb-3 border-blue-200 bg-blue-50">
-                <Mic className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  🎤 Listening... Speak now! I'll process when you finish.
+              <Alert className="absolute bottom-20 left-4 right-4 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+                <AlertTriangle className="h-4 w-4 text-purple-600" />
+                <AlertDescription className="text-purple-700">
+                  Listening... Speak your message now
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* Input Area - Fixed Position */}
-            <div className="sticky bottom-0 bg-white dark:bg-card border-t pt-3 -mx-4 px-4 -mb-4 pb-safe">
-              <div className="flex gap-2 items-end">
-                <Textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder={isListening ? "Speaking..." : "Type your message or use voice input..."}
-                  className="flex-1 min-h-[50px] max-h-24 text-sm resize-none border-2 focus:border-purple-400"
-                  disabled={isLoading || isListening}
-                />
-                <div className="flex flex-col gap-2 flex-shrink-0">
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || isLoading || isListening}
-                    size="sm"
-                    className="h-10 w-10 p-0 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+            {/* WhatsApp-style Input Area - Fixed to bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 safe-area-padding">
+              <div className="flex gap-2 items-end max-w-full">
+                <div className="flex-1 min-w-0">
+                  <Textarea
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Type your message or use voice input..."
+                    disabled={isLoading}
+                    className="min-h-[2.5rem] max-h-20 text-sm resize-none border border-gray-300 dark:border-gray-600 rounded-2xl focus:border-purple-500 focus:ring-1 focus:ring-purple-500 px-4 py-2"
+                    rows={1}
+                  />
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
                   {speechRecognition && (
                     <Button
                       onClick={handleVoiceInput}
+                      disabled={isLoading}
                       variant={isListening ? "destructive" : "outline"}
                       size="sm"
-                      className="h-10 w-10 p-0"
+                      className="h-10 w-10 p-0 rounded-full"
                     >
                       {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </Button>
                   )}
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || !newMessage.trim()}
+                    size="sm"
+                    className="h-10 w-10 p-0 rounded-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Mobile safe area padding */}
+      <div className="h-16 mobile-safe"></div>
     </div>
   );
 };

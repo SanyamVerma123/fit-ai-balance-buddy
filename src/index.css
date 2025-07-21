@@ -42,11 +42,11 @@
     --gradient-food: linear-gradient(135deg, hsl(24 95% 53%), hsl(45 93% 47%));
     --gradient-dark: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(240 5.9% 10%));
     
-    /* Different food category colors */
-    --food-breakfast: hsl(45 95% 58%);
-    --food-lunch: hsl(120 85% 48%);
-    --food-snacks: hsl(280 75% 58%);
-    --food-dinner: hsl(200 85% 48%);
+    /* Premium gradient colors - no orange */
+    --gradient-premium: linear-gradient(135deg, hsl(283 76% 54%), hsl(142 76% 36%));
+    --gradient-elegant: linear-gradient(135deg, hsl(260 76% 54%), hsl(200 85% 48%));
+    --gradient-fresh: linear-gradient(135deg, hsl(142 76% 36%), hsl(180 85% 48%));
+    --gradient-luxury: linear-gradient(135deg, hsl(320 76% 54%), hsl(283 76% 54%));
     
     /* Professional shadows */
     --shadow-glow: 0 4px 20px hsl(var(--primary) / 0.3);
@@ -135,13 +135,17 @@
     padding: 0;
   }
   
-  /* Mobile-specific styles */
+    /* Mobile-specific styles */
   @media (max-width: 768px) {
     .mobile-safe {
       padding-bottom: env(safe-area-inset-bottom);
     }
     
     .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .safe-area-padding {
       padding-bottom: env(safe-area-inset-bottom);
     }
     
@@ -159,6 +163,12 @@
     /* Ensure chat input area is properly sized on mobile */
     .chat-input-area {
       padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+    
+    /* Fix mobile layout for main content */
+    .main-content {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
   }
 }
