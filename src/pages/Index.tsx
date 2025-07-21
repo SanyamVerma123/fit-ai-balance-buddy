@@ -129,7 +129,7 @@ const Index = () => {
       id: Date.now().toString(),
       name: workout.name,
       duration: workout.duration || 0,
-      caloriesBurned: workout.calories || 0,
+      caloriesBurned: workout.calories || workout.caloriesBurned || 0,
       timestamp: new Date().toISOString()
     };
 
@@ -139,16 +139,39 @@ const Index = () => {
       workoutItems: [...prev.workoutItems, workoutItem]
     }));
 
-    // Save to localStorage
+    // Save to localStorage for dashboard
     const existingLog = JSON.parse(localStorage.getItem('dailyWorkoutLog') || '[]');
     const newLog = [...existingLog, workoutItem];
     localStorage.setItem('dailyWorkoutLog', JSON.stringify(newLog));
+
+    // Also update the workouts with date structure for the workout page
+    const dailyWorkouts = JSON.parse(localStorage.getItem('dailyWorkouts') || '{}');
+    const todayKey = new Date().toDateString();
+    
+    if (!dailyWorkouts[todayKey]) {
+      dailyWorkouts[todayKey] = { workouts: [], totalCaloriesBurned: 0 };
+    }
+    
+    dailyWorkouts[todayKey].workouts.push({
+      name: workout.name,
+      duration: workout.duration || 0,
+      calories: workout.calories || workout.caloriesBurned || 0,
+      date: todayKey
+    });
+    dailyWorkouts[todayKey].totalCaloriesBurned += workout.calories || workout.caloriesBurned || 0;
+    
+    localStorage.setItem('dailyWorkouts', JSON.stringify(dailyWorkouts));
     
     // Trigger storage event
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'dailyWorkoutLog',
       newValue: JSON.stringify(newLog)
     }));
+
+    toast({
+      title: "Workout Added! 💪",
+      description: `Added ${workout.name} (${workout.duration || 0} minutes, ${workout.calories || workout.caloriesBurned || 0} calories)`,
+    });
   };
 
   const handleWaterAdd = (amount: number) => {

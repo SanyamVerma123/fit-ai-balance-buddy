@@ -56,6 +56,7 @@ const AiCoach = () => {
       recognition.lang = 'en-US';
 
       let tempTranscript = '';
+      let hasProcessedFinal = false;
 
       recognition.onresult = (event: any) => {
         let interimTranscript = '';
@@ -69,14 +70,16 @@ const AiCoach = () => {
           }
         }
         
-        // Prevent duplication by checking if text already exists
-        if (finalTranscript.trim() && !tempTranscript.includes(finalTranscript.trim())) {
-          tempTranscript += finalTranscript;
+        // Only process final transcript once
+        if (finalTranscript.trim() && !hasProcessedFinal) {
+          tempTranscript = finalTranscript.trim();
+          hasProcessedFinal = true;
           setFullTranscript(tempTranscript);
         }
         
-        // Show live transcript
-        setNewMessage(tempTranscript + interimTranscript);
+        // Show live transcript (interim + final)
+        const displayText = tempTranscript + (hasProcessedFinal ? '' : interimTranscript);
+        setNewMessage(displayText);
       };
 
       recognition.onspeechend = () => {
@@ -86,6 +89,7 @@ const AiCoach = () => {
           setNewMessage(tempTranscript.trim());
           setFullTranscript('');
           tempTranscript = '';
+          hasProcessedFinal = false;
         }
       };
 
@@ -246,11 +250,11 @@ Current conversation context: The user can speak to you using voice input and yo
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+          model: 'llama-3.1-70b-versatile',
           messages: [
             { role: 'system', content: context },
             { role: 'user', content: userMessage }
@@ -352,7 +356,7 @@ Current conversation context: The user can speak to you using voice input and yo
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-purple-50 via-white to-blue-50 overflow-x-hidden">
-      <div className="w-full px-2 sm:px-3 py-2 sm:py-4 max-w-full">
+      <div className="w-full px-2 sm:px-4 py-2 sm:py-4 max-w-full">
         {/* Header */}
         <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-4">
           <SidebarTrigger />
@@ -374,8 +378,8 @@ Current conversation context: The user can speak to you using voice input and yo
         </div>
 
         {/* Chat Container */}
-        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-120px)]">
-          <CardHeader className="px-3 sm:px-4 pb-2 sm:pb-3">
+        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)]">
+          <CardHeader className="px-4 pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Bot className="w-4 h-4 text-blue-600 flex-shrink-0" />
@@ -397,9 +401,9 @@ Current conversation context: The user can speak to you using voice input and yo
             </div>
           </CardHeader>
 
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 h-full flex flex-col">
+          <CardContent className="px-4 pb-4 h-full flex flex-col">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-300">
+            <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1 scrollbar-thin scrollbar-thumb-gray-300">
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -457,22 +461,22 @@ Current conversation context: The user can speak to you using voice input and yo
             )}
 
             {/* Input Area - Fixed Position */}
-            <div className="sticky bottom-0 bg-white dark:bg-card border-t pt-3 -mx-4 px-4 -mb-4 pb-4">
-              <div className="flex gap-2">
+            <div className="sticky bottom-0 bg-white dark:bg-card border-t pt-3 -mx-4 px-4 -mb-4 pb-safe">
+              <div className="flex gap-2 items-end">
                 <Textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder={isListening ? "Speaking..." : "Type your message or use voice input..."}
-                  className="flex-1 min-h-[60px] max-h-24 text-sm resize-none border-2 focus:border-purple-400"
+                  className="flex-1 min-h-[50px] max-h-24 text-sm resize-none border-2 focus:border-purple-400"
                   disabled={isLoading || isListening}
                 />
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-2 flex-shrink-0">
                   <Button
                     onClick={sendMessage}
                     disabled={!newMessage.trim() || isLoading || isListening}
                     size="sm"
-                    className="h-12 w-12 p-0 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
+                    className="h-10 w-10 p-0 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white"
                   >
                     <Send className="w-4 h-4" />
                   </Button>
@@ -481,7 +485,7 @@ Current conversation context: The user can speak to you using voice input and yo
                       onClick={handleVoiceInput}
                       variant={isListening ? "destructive" : "outline"}
                       size="sm"
-                      className="h-12 w-12 p-0"
+                      className="h-10 w-10 p-0"
                     >
                       {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </Button>

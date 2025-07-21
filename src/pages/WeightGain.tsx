@@ -8,7 +8,7 @@ import { TrendingUp, Target, Utensils, Dumbbell, Brain } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 
-const PERMANENT_API_KEY = "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";
+const PERMANENT_API_KEY = "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";
 
 const WeightGain = () => {
   const [isGettingAISuggestion, setIsGettingAISuggestion] = useState(false);

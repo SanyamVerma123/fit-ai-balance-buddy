@@ -17,7 +17,7 @@ interface Message {
   timestamp: string;
 }
 
-const PERMANENT_API_KEY = "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";
+const PERMANENT_API_KEY = "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";
 
 // Food database for automatic recognition
 const FOOD_DATABASE: Record<string, { calories: number; unit: string; category: string }> = {

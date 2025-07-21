@@ -134,6 +134,33 @@
     margin: 0;
     padding: 0;
   }
+  
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    .mobile-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* Prevent horizontal overflow on mobile */
+    body {
+      overflow-x: hidden;
+      width: 100vw;
+    }
+    
+    * {
+      max-width: 100vw;
+      overflow-x: auto;
+    }
+    
+    /* Ensure chat input area is properly sized on mobile */
+    .chat-input-area {
+      padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 @layer components {
