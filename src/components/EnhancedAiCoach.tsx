@@ -254,7 +254,7 @@ Current conversation context: The user can speak to you using voice input and yo
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: 'llama-3.1-70b-versatile',
           messages: [
             { role: 'system', content: context },
             { role: 'user', content: userMessage }
@@ -304,6 +304,15 @@ Current conversation context: The user can speak to you using voice input and yo
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Add speech synthesis for AI responses
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(aiMessage.text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        window.speechSynthesis.speak(utterance);
+      }
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -377,8 +386,8 @@ Current conversation context: The user can speak to you using voice input and yo
           </Button>
         </div>
 
-        {/* Chat Container */}
-        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)]">
+        {/* Chat Container - Adjusted for fixed input */}
+        <Card className="w-full border-0 shadow-lg max-w-none h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] mb-20">
           <CardHeader className="px-4 pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0 flex-1">

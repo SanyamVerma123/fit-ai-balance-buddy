@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Utensils, Plus, Camera, Brain, Mic, X, Edit, Trash2 } from "lucide-react";
+import { Utensils, Plus, Camera, Brain, Mic, X, Edit, Trash2, ArrowLeft, Sparkles, Upload } from "lucide-react";
+import { FoodHistory } from "@/components/FoodHistory";
 import { useToast } from "@/hooks/use-toast";
 import breakfastImg from "@/assets/breakfast-foods.jpg";
 import lunchImg from "@/assets/lunch-foods.jpg";
@@ -129,7 +130,7 @@ const RecordMeal = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: 'llama-3.1-70b-versatile',
           messages: [
             {
               role: 'system',
@@ -193,7 +194,7 @@ const RecordMeal = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+          model: 'llama-3.1-70b-versatile',
           messages: [
             {
               role: 'system',
@@ -221,23 +222,29 @@ const RecordMeal = () => {
       const data = await response.json();
       const content = data.choices[0].message.content;
       
-      try {
-        const parsed = JSON.parse(content);
-        setFoodName(parsed.name || 'Food from image');
-        setQuantity(parsed.quantity?.toString() || '1');
-        setUnit(parsed.unit || 'piece');
-        
-        toast({
-          title: "Photo analyzed! 📸",
-          description: `Detected: ${parsed.name || 'Food from image'}`,
-        });
-      } catch {
-        setFoodName('Food from image');
-        toast({
-          title: "Photo uploaded! 📸",
-          description: "Please enter food details manually",
-        });
-      }
+        try {
+          const parsed = JSON.parse(content);
+          setFoodName(parsed.name || 'Food from image');
+          setQuantity(parsed.quantity?.toString() || '1');
+          setUnit(parsed.unit || 'piece');
+          
+          // Also calculate nutrition if detected
+          if (parsed.name) {
+            const nutrition = await calculateNutrition(parsed.name, parsed.quantity?.toString() || '1', parsed.unit || 'piece');
+            // Store the nutrition data for when user adds the food
+          }
+          
+          toast({
+            title: "Food Detected! 📸",
+            description: `Found: ${parsed.name || 'Food from image'} (${parsed.calories || 0} kcal)`,
+          });
+        } catch {
+          setFoodName('Food from image');
+          toast({
+            title: "Photo uploaded! 📸",
+            description: "Please enter food details manually",
+          });
+        }
     } catch (error) {
       toast({
         title: "Analysis failed",
@@ -397,6 +404,41 @@ const RecordMeal = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Food History Section */}
+      <div className="max-w-2xl mx-auto">
+        <FoodHistory onAddFood={(food) => {
+          // When user adds food from history, redirect and populate form
+          const todayKey = new Date().toISOString().split('T')[0];
+          const mealTime = new Date().toLocaleTimeString();
+          
+          // Add to storage
+          const existingMeals = JSON.parse(localStorage.getItem('dailyMeals') || '{}');
+          const updatedMeals = {
+            ...existingMeals,
+            [todayKey]: [...(existingMeals[todayKey] || []), {
+              ...food,
+              date: todayKey,
+              time: mealTime
+            }]
+          };
+          localStorage.setItem('dailyMeals', JSON.stringify(updatedMeals));
+          
+          // Also add to dailyFoodLog for consistency
+          const existingLog = JSON.parse(localStorage.getItem('dailyFoodLog') || '[]');
+          existingLog.push({
+            ...food,
+            timestamp: new Date().toISOString()
+          });
+          localStorage.setItem('dailyFoodLog', JSON.stringify(existingLog));
+          
+          // Trigger storage events
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'dailyMeals',
+            newValue: JSON.stringify(updatedMeals)
+          }));
+        }} />
       </div>
     </div>
   );
