@@ -41,7 +41,7 @@ const AppContent = () => {
   }
 
   if (!user) {
-    return <Login onAuthSuccess={() => window.location.reload()} />;
+    return <Login onAuthSuccess={() => {}} />;
   }
 
   if (!isOnboarded) {
