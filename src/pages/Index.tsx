@@ -7,7 +7,7 @@ import { SimpleMealTracker as EnhancedMealTracker } from "@/components/SimpleMea
 import { AiCalorieGoalCalculator } from "@/components/AiCalorieGoalCalculator";
 import { WaterIntakeTracker } from "@/components/WaterIntakeTracker";
 import { VoiceInput } from "@/components/VoiceInput";
-import { ConversationVoiceInput } from "@/components/ConversationVoiceInput";
+
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
@@ -429,18 +429,6 @@ const Index = () => {
         />
       )}
 
-      {/* Conversation Voice Input Modal */}
-      {showConversationVoice && (
-        <ConversationVoiceInput
-          onClose={() => setShowConversationVoice(false)}
-          onDataSaved={(data) => {
-            // Handle saved conversation data
-            data.foods?.forEach((food: any) => handleVoiceFoodDetected(food));
-            data.workouts?.forEach((workout: any) => handleVoiceWorkoutDetected(workout));
-            data.water?.forEach((water: any) => handleWaterAdd(water.amount));
-          }}
-        />
-      )}
     </div>
   );
 };

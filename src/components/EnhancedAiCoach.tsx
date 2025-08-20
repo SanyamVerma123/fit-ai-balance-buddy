@@ -250,11 +250,11 @@ Current conversation context: The user can speak to you using voice input and yo
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             { role: 'system', content: context },
             { role: 'user', content: userMessage }

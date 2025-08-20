@@ -74,7 +74,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
@@ -145,7 +145,7 @@ export const AiWorkoutTracker = ({ onWorkoutAdd }: AiWorkoutTrackerProps) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.1-70b-versatile',
+          model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
           messages: [
             {
               role: 'system',
